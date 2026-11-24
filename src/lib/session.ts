@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
 const COOKIE_NAME = "portal_session";
 const MAX_AGE = 60 * 60 * 24 * 7;
@@ -27,12 +27,21 @@ export async function createSessionToken(payload: TokenPayload) {
 }
 
 export async function verifySessionToken(token: string) {
-  const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
-  if (!payload.sub || (payload.role !== "PLAYER" && payload.role !== "ADMIN")) {
+  const key = secretKey();
+  let payload: JWTPayload;
+  try {
+    ({ payload } = await jwtVerify(token, key, { algorithms: ["HS256"] }));
+  } catch {
+    return null;
+  }
+
+  const userId = Number(payload.sub);
+  if (!Number.isSafeInteger(userId) || userId <= 0 ||
+      (payload.role !== "PLAYER" && payload.role !== "ADMIN")) {
     return null;
   }
   return {
-    userId: Number(payload.sub),
+    userId,
     username: String(payload.username || "Player"),
     role: payload.role,
   } as const;

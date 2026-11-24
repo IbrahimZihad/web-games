@@ -60,11 +60,16 @@ const tagFields = "id name slug";
 
 // gameFragment is shared with the portal. These merged selections restore the
 // category fields used by admin screens without changing the public fragment.
-const adminGameSelection = `
-  ${gameFragment}
-  category { description displayOrder }
-  comments { user { email } }
-`;
+const adminGameSelection = gameFragment
+  .replace("fragment GameFields", "fragment AdminGameFields")
+  .replace(
+    "category { id name slug iconName gameCount }",
+    "category { id name slug iconName gameCount description displayOrder }",
+  )
+  .replace(
+    "user { id username avatarUrl role }",
+    "user { id username avatarUrl role email }",
+  );
 
 const meQuery = `
   query AdminMe {
@@ -79,7 +84,7 @@ const adminStatsQuery = `
       topGames { ...AdminGameFields }
     }
   }
-  ${adminGameSelection.replace("fragment GameFields", "fragment AdminGameFields")}
+  ${adminGameSelection}
 `;
 
 const adminGamesQuery = `
@@ -88,14 +93,14 @@ const adminGamesQuery = `
       ...AdminGameFields
     }
   }
-  ${adminGameSelection.replace("fragment GameFields", "fragment AdminGameFields")}
+  ${adminGameSelection}
 `;
 
 const gameByIdQuery = `
   query AdminGameById($id: ID!) {
     gameById(id: $id) { ...AdminGameFields }
   }
-  ${adminGameSelection.replace("fragment GameFields", "fragment AdminGameFields")}
+  ${adminGameSelection}
 `;
 
 const categoriesQuery = `
@@ -114,14 +119,14 @@ const createGameMutation = `
   mutation AdminCreateGame($input: UpsertGameInput!) {
     createGame(input: $input) { ...AdminGameFields }
   }
-  ${adminGameSelection.replace("fragment GameFields", "fragment AdminGameFields")}
+  ${adminGameSelection}
 `;
 
 const updateGameMutation = `
   mutation AdminUpdateGame($id: ID!, $input: UpsertGameInput!) {
     updateGame(id: $id, input: $input) { ...AdminGameFields }
   }
-  ${adminGameSelection.replace("fragment GameFields", "fragment AdminGameFields")}
+  ${adminGameSelection}
 `;
 
 const deleteGameMutation = `

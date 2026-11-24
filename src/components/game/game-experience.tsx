@@ -173,8 +173,7 @@ export function GameExperience({ game }: { game: GameDTO }) {
                 title={`${game.title} game`}
                 className="h-full w-full border-0 bg-black"
                 sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"
-                allow="autoplay; fullscreen; gamepad; pointer-lock"
-                allowFullScreen
+                allow="autoplay; fullscreen; gamepad"
                 onLoad={() => setLoading(false)}
               />
               {loading && <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-[#0b0c12] text-zinc-400"><LoaderCircle size={30} className="animate-spin text-violet-400" /><p className="mt-4 text-sm font-semibold">Loading {game.title}…</p><p className="mt-1 text-xs text-zinc-600">Preparing your game</p></div>}
