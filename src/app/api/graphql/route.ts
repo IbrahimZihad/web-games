@@ -1,5 +1,5 @@
-import { GraphQLError } from "graphql";
-import { createSchema, createYoga } from "graphql-yoga";
+import type { GraphQLError } from "graphql";
+import { createGraphQLError, createSchema, createYoga } from "graphql-yoga";
 import type { NextRequest } from "next/server";
 import { AuthError, getCurrentUser } from "@/lib/auth";
 import { resolvers } from "@/lib/graphql/resolvers";
@@ -7,33 +7,40 @@ import { typeDefs } from "@/lib/graphql/schema";
 
 const schema = createSchema({ typeDefs, resolvers });
 
+function isGraphQLErrorShape(error: unknown): error is GraphQLError {
+  return typeof error === "object" && error !== null &&
+    "message" in error && "extensions" in error &&
+    ("path" in error || "locations" in error || "nodes" in error || "positions" in error);
+}
+
 function maskGraphQLError(error: unknown, message: string) {
-  const originalError = error instanceof GraphQLError ? error.originalError : error;
+  const graphqlError = isGraphQLErrorShape(error) ? error : null;
+  const originalError = graphqlError?.originalError ?? error;
   if (originalError instanceof AuthError || (originalError instanceof Error && originalError.name === "AuthError")) {
     const status = originalError instanceof AuthError
       ? originalError.status
       : (originalError as Error & { status?: unknown }).status;
     const forbidden = status === 403;
-    return new GraphQLError(forbidden ? "Administrator access required." : "Please sign in to continue.", {
+    return createGraphQLError(forbidden ? "Administrator access required." : "Please sign in to continue.", {
       extensions: { code: forbidden ? "FORBIDDEN" : "UNAUTHENTICATED" },
     });
   }
 
-  if (!(error instanceof GraphQLError) || error.originalError) {
-    return new GraphQLError(message, {
+  if (!graphqlError || graphqlError.originalError) {
+    return createGraphQLError(message, {
       extensions: { code: "INTERNAL_SERVER_ERROR", unexpected: true },
     });
   }
 
   const extensions: Record<string, unknown> = {};
-  if (typeof error.extensions.code === "string") extensions.code = error.extensions.code;
-  if (typeof error.extensions.unexpected === "boolean") extensions.unexpected = error.extensions.unexpected;
+  if (typeof graphqlError.extensions.code === "string") extensions.code = graphqlError.extensions.code;
+  if (typeof graphqlError.extensions.unexpected === "boolean") extensions.unexpected = graphqlError.extensions.unexpected;
 
-  return new GraphQLError(error.message, {
-    nodes: error.nodes,
-    source: error.source,
-    positions: error.positions,
-    path: error.path,
+  return createGraphQLError(graphqlError.message, {
+    nodes: graphqlError.nodes,
+    source: graphqlError.source,
+    positions: graphqlError.positions,
+    path: graphqlError.path,
     extensions,
   });
 }
