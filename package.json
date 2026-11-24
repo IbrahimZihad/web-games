@@ -1,0 +1,51 @@
+{
+  "name": "web-games",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "node scripts/setup-local-db.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "@types/yauzl": "^3.4.0",
+    "bcryptjs": "^3.0.3",
+    "graphql": "^16.11.0",
+    "graphql-yoga": "5.24.6",
+    "jose": "^6.2.18",
+    "lucide-react": "^1.79.0",
+    "next": "16.4.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tsx": "^4.23.15",
+    "yauzl": "^3.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.6",
+    "prisma": "6.19.3",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "@graphql-tools/utils": "12.1.0",
+    "@graphql-tools/executor": "2.1.0",
+    "deepmerge-ts": "8.0.2",
+    "effect": "3.22.5"
+  }
+}

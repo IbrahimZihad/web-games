@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+enum GameStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SourceType {
+  UPLOADED_ZIP
+  EXTERNAL_URL
+}
+
+enum AspectRatio {
+  RATIO_16_9
+  RATIO_4_3
+  RATIO_9_16
+  RESPONSIVE
+}
+
+enum Orientation {
+  LANDSCAPE
+  PORTRAIT
+  ANY
+}
+
+enum VoteType {
+  LIKE
+  DISLIKE
+}
+
+model User {
+  id          Int      @id @default(autoincrement()) @db.UnsignedInt
+  username    String   @unique @db.VarChar(50)
+  email       String   @unique @db.VarChar(255)
+  passwordHash String   @db.VarChar(255)
+  avatarUrl   String?  @db.VarChar(500)
+  role        Role     @default(PLAYER)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamp(0)
+  updatedAt   DateTime @updatedAt @db.Timestamp(0)
+
+  favorites    UserFavorite[]
+  playHistory  PlayHistory[]
+  ratings      GameRating[]
+  comments     Comment[]
+  createdGames Game[]      @relation("GameCreator")
+}
+
+model Category {
+  id           Int     @id @default(autoincrement()) @db.UnsignedInt
+  name         String  @unique @db.VarChar(100)
+  slug         String  @unique @db.VarChar(120)
+  iconName     String  @default("gamepad") @db.VarChar(100)
+  description  String? @db.Text
+  displayOrder Int     @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamp(0)
+
+  games Game[]
+}
+
+model Game {
+  id               Int         @id @default(autoincrement()) @db.UnsignedInt
+  title            String      @db.VarChar(200)
+  slug             String      @unique @db.VarChar(220)
+  tagline          String?     @db.VarChar(300)
+  description      String      @db.Text
+  controlsGuide    String?     @db.Text
+  developerName    String      @default("In-House Studio") @db.VarChar(150)
+  categoryId       Int         @db.UnsignedInt
+  sourceType       SourceType  @default(UPLOADED_ZIP)
+  embedUrl         String      @db.VarChar(500)
+  aspectRatio      AspectRatio @default(RATIO_16_9)
+  orientation      Orientation @default(LANDSCAPE)
+  supportsMobile   Boolean     @default(false)
+  thumbnailUrl     String      @db.VarChar(500)
+  posterUrl        String?     @db.VarChar(500)
+  previewVideoUrl  String?     @db.VarChar(500)
+  screenshots      Json?
+  status           GameStatus  @default(DRAFT)
+  isFeatured       Boolean     @default(false)
+  isTrending       Boolean     @default(false)
+  playCount        BigInt      @default(0) @db.UnsignedBigInt
+  likesCount       Int         @default(0) @db.UnsignedInt
+  dislikesCount    Int         @default(0) @db.UnsignedInt
+  createdById      Int?        @db.UnsignedInt
+  publishedAt      DateTime?   @db.Timestamp(0)
+  createdAt        DateTime    @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime    @updatedAt @db.Timestamp(0)
+
+  category      Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy     User?          @relation("GameCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  tags          GameTag[]
+  favorites     UserFavorite[]
+  playHistory   PlayHistory[]
+  ratings       GameRating[]
+  comments      Comment[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([playCount])
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @unique @db.VarChar(80)
+  slug String @unique @db.VarChar(100)
+
+  games GameTag[]
+}
+
+model GameTag {
+  gameId Int @db.UnsignedInt
+  tagId  Int @db.UnsignedInt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, tagId])
+}
+
+model UserFavorite {
+  userId    Int      @db.UnsignedInt
+  gameId    Int      @db.UnsignedInt
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([userId, gameId])
+}
+
+model PlayHistory {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  userId            Int?     @db.UnsignedInt
+  sessionFingerprint String? @db.VarChar(128)
+  gameId            Int      @db.UnsignedInt
+  playedAt          DateTime @default(now()) @db.Timestamp(0)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([userId, playedAt])
+}
+
+model GameRating {
+  userId    Int      @db.UnsignedInt
+  gameId    Int      @db.UnsignedInt
+  vote      VoteType
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([userId, gameId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  gameId    Int      @db.UnsignedInt
+  userId    Int      @db.UnsignedInt
+  body      String   @db.Text
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, createdAt])
+}

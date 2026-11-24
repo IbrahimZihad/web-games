@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Blockfall</title>
+  <desc id="desc">An original neon falling-block puzzle cover with a glowing matrix, colorful geometric pieces and an explosive orange line clear.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080615"/>
+      <stop offset="0.55" stop-color="#1a0c35"/>
+      <stop offset="1" stop-color="#071b2c"/>
+    </linearGradient>
+    <radialGradient id="violet" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#9d39ff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#9d39ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="aqua" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#16f2e5" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#16f2e5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16142d" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#070b19" stop-opacity="0.96"/>
+    </linearGradient>
+    <linearGradient id="cyanBlock" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9bffff"/><stop offset="0.45" stop-color="#20e6e8"/><stop offset="1" stop-color="#1184b7"/>
+    </linearGradient>
+    <linearGradient id="purpleBlock" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e0a3ff"/><stop offset="0.45" stop-color="#a64cff"/><stop offset="1" stop-color="#5923a7"/>
+    </linearGradient>
+    <linearGradient id="orangeBlock" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0a0"/><stop offset="0.45" stop-color="#ff9b32"/><stop offset="1" stop-color="#e34544"/>
+    </linearGradient>
+    <linearGradient id="pinkBlock" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb0dc"/><stop offset="0.45" stop-color="#ff4aa8"/><stop offset="1" stop-color="#a51f70"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#080615" stop-opacity="0.98"/><stop offset="0.52" stop-color="#080615" stop-opacity="0.55"/><stop offset="1" stop-color="#080615" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grid" width="38" height="42" patternUnits="userSpaceOnUse">
+      <path d="M38 0H0V42" fill="none" stroke="#6a4b94" stroke-opacity="0.28" stroke-width="1"/>
+    </pattern>
+    <pattern id="micro" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#b8a8dc" opacity="0.08"/>
+    </pattern>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="18"/></filter>
+    <g id="cubeCyan">
+      <polygon points="0,0 32,-18 64,0 32,18" fill="#8dffff"/>
+      <polygon points="0,0 32,18 32,50 0,32" fill="#159ebc"/>
+      <polygon points="32,18 64,0 64,32 32,50" fill="#086486"/>
+      <path d="M3 2L32-14L61 2" fill="none" stroke="#eaffff" stroke-width="2" opacity="0.8"/>
+    </g>
+    <g id="cubePurple">
+      <polygon points="0,0 32,-18 64,0 32,18" fill="#dba4ff"/>
+      <polygon points="0,0 32,18 32,50 0,32" fill="#8736d2"/>
+      <polygon points="32,18 64,0 64,32 32,50" fill="#482080"/>
+      <path d="M3 2L32-14L61 2" fill="none" stroke="#f6ddff" stroke-width="2" opacity="0.8"/>
+    </g>
+    <g id="cubeOrange">
+      <polygon points="0,0 32,-18 64,0 32,18" fill="#ffe487"/>
+      <polygon points="0,0 32,18 32,50 0,32" fill="#ef7829"/>
+      <polygon points="32,18 64,0 64,32 32,50" fill="#a93438"/>
+      <path d="M3 2L32-14L61 2" fill="none" stroke="#fff5c7" stroke-width="2" opacity="0.8"/>
+    </g>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <ellipse cx="905" cy="270" rx="420" ry="380" fill="url(#violet)"/>
+  <ellipse cx="890" cy="600" rx="430" ry="220" fill="url(#aqua)"/>
+  <rect width="1280" height="720" fill="url(#micro)"/>
+
+  <g opacity="0.3" stroke="#8155bd" fill="none">
+    <path d="M0 100H1280M0 220H1280M0 340H1280M0 460H1280M0 580H1280M0 700H1280"/>
+    <path d="M100 0V720M260 0V720M420 0V720M580 0V720M740 0V720M900 0V720M1060 0V720M1220 0V720"/>
+  </g>
+  <g fill="#0b0a1d" stroke="#372453" stroke-width="2" opacity="0.75">
+    <path d="M0 620H70V540H140V596H210V486H280V572H350V520H420V640H0Z"/>
+    <path d="M940 640H1010V558H1080V612H1150V506H1220V574H1280V720H940Z"/>
+  </g>
+
+  <g transform="translate(690 92)">
+    <rect x="-34" y="-26" width="438" height="612" rx="28" fill="#030611" opacity="0.6" filter="url(#blur)"/>
+    <rect x="-22" y="-18" width="410" height="590" rx="22" fill="url(#panel)" stroke="#6d48a1" stroke-width="2"/>
+    <rect width="366" height="546" rx="12" fill="#090b1b" stroke="#20e6e8" stroke-opacity="0.42" stroke-width="2"/>
+    <rect width="366" height="546" rx="12" fill="url(#grid)"/>
+    <path d="M0 0H366" stroke="#b687ff" stroke-width="7" filter="url(#glow)"/>
+
+    <g stroke-width="2">
+      <g transform="translate(38 378)">
+        <rect width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="38" width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="76" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="152" width="34" height="38" rx="5" fill="url(#pinkBlock)" stroke="#ffc4e7"/>
+        <rect x="190" width="34" height="38" rx="5" fill="url(#pinkBlock)" stroke="#ffc4e7"/>
+        <rect x="228" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="266" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+      </g>
+      <g transform="translate(0 420)">
+        <rect width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="38" width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="76" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="114" width="34" height="38" rx="5" fill="url(#orangeBlock)" stroke="#fff0ae"/>
+        <rect x="152" width="34" height="38" rx="5" fill="url(#pinkBlock)" stroke="#ffc4e7"/>
+        <rect x="228" width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="304" width="34" height="38" rx="5" fill="url(#orangeBlock)" stroke="#fff0ae"/>
+      </g>
+      <g transform="translate(76 462)">
+        <rect width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="38" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="76" width="34" height="38" rx="5" fill="url(#orangeBlock)" stroke="#fff0ae"/>
+        <rect x="152" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="190" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="228" width="34" height="38" rx="5" fill="url(#pinkBlock)" stroke="#ffc4e7"/>
+        <rect x="266" width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="304" width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+      </g>
+      <g transform="translate(114 504)">
+        <rect width="34" height="38" rx="5" fill="url(#orangeBlock)" stroke="#fff0ae"/>
+        <rect x="38" width="34" height="38" rx="5" fill="url(#orangeBlock)" stroke="#fff0ae"/>
+        <rect x="76" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="152" width="34" height="38" rx="5" fill="url(#purpleBlock)" stroke="#e4b7ff"/>
+        <rect x="190" width="34" height="38" rx="5" fill="url(#pinkBlock)" stroke="#ffc4e7"/>
+        <rect x="228" width="34" height="38" rx="5" fill="url(#cyanBlock)" stroke="#baffff"/>
+        <rect x="266" width="34" height="38" rx="5" fill="url(#orangeBlock)" stroke="#fff0ae"/>
+        <rect x="304" width="34" height="38" rx="5" fill="url(#pinkBlock)" stroke="#ffc4e7"/>
+      </g>
+    </g>
+
+    <rect y="378" width="366" height="42" fill="#ff7b32" opacity="0.2"/>
+    <path d="M0 399H366" stroke="#ff9d32" stroke-width="4" filter="url(#glow)"/>
+    <g stroke="#fff4ba" stroke-width="3" opacity="0.9">
+      <path d="M-8 380L-24 372M-8 418L-26 430M374 380L390 368M374 418L394 432"/>
+    </g>
+
+    <g transform="translate(132 160) rotate(-8 64 25)" filter="url(#glow)">
+      <use href="#cubeCyan" x="0" y="0"/><use href="#cubeCyan" x="64" y="0"/><use href="#cubeCyan" x="64" y="36"/><use href="#cubeCyan" x="128" y="36"/>
+    </g>
+    <g transform="translate(236 280) rotate(7 32 25)" filter="url(#glow)">
+      <use href="#cubeOrange" x="0" y="0"/><use href="#cubeOrange" x="64" y="0"/><use href="#cubeOrange" x="0" y="36"/>
+    </g>
+    <path d="M110 310L132 320M250 250L234 264M190 346L190 368" stroke="#d9c6ff" stroke-width="2" stroke-dasharray="5 7" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(1100 126)" opacity="0.9">
+    <rect width="104" height="104" rx="14" fill="#0c0b20" stroke="#694794" stroke-width="2"/>
+    <text x="16" y="26" fill="#a796c4" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="2">NEXT</text>
+    <g transform="translate(23 49)" filter="url(#glow)"><use href="#cubePurple" x="0" y="0"/><use href="#cubePurple" x="32" y="18"/></g>
+  </g>
+
+  <rect width="1280" height="720" fill="url(#shade)"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <g transform="translate(76 66)">
+      <rect width="210" height="30" rx="15" fill="#18122e" stroke="#a75cff" stroke-opacity="0.55"/>
+      <circle cx="17" cy="15" r="4" fill="#a75cff" filter="url(#glow)"/>
+      <text x="32" y="20" fill="#ead9ff" font-size="12" font-weight="700" letter-spacing="3">PUZZLE PROTOCOL</text>
+    </g>
+    <text x="72" y="218" fill="#f8f7ff" font-size="90" font-weight="900" letter-spacing="-5">BLOCK</text>
+    <text x="72" y="310" fill="#20e6e8" font-size="90" font-weight="900" letter-spacing="-5" filter="url(#glow)">FALL</text>
+    <path d="M76 340H342" stroke="#ff9138" stroke-width="5"/>
+    <text x="76" y="382" fill="#c8c4dc" font-size="18" font-weight="600" letter-spacing="1">STACK SMART. CLEAR THE SIGNAL.</text>
+    <g transform="translate(76 424)">
+      <rect width="148" height="42" rx="8" fill="#20e6e8" fill-opacity="0.1" stroke="#20e6e8" stroke-opacity="0.5"/>
+      <text x="18" y="27" fill="#d9feff" font-size="13" font-weight="700" letter-spacing="2">7 SHAPES</text>
+      <rect x="162" width="166" height="42" rx="8" fill="#ff9138" fill-opacity="0.1" stroke="#ff9138" stroke-opacity="0.5"/>
+      <text x="180" y="27" fill="#ffe7cf" font-size="13" font-weight="700" letter-spacing="2">CHAIN CLEARS</text>
+    </g>
+    <text x="76" y="638" fill="#817a9f" font-size="12" font-weight="700" letter-spacing="4">ORIGINAL ARCADE SERIES // 03</text>
+    <g transform="translate(1080 606)">
+      <text x="0" y="0" fill="#a796c4" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="3">COMBO</text>
+      <text x="0" y="58" fill="#ffad45" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="900">x8</text>
+      <path d="M0 76H126" stroke="#a75cff" stroke-width="3"/>
+    </g>
+  </g>
+</svg>

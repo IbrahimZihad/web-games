@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Neon Drift</title>
+  <desc id="desc">An original top-down night racing cover featuring a cyan and orange sports car, electric light trails and a futuristic elevated circuit.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070615"/>
+      <stop offset="0.55" stop-color="#17102f"/>
+      <stop offset="1" stop-color="#061a27"/>
+    </linearGradient>
+    <radialGradient id="pink" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#b638ff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#b638ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#16f1ef" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#16f1ef" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="asphalt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1b33"/>
+      <stop offset="0.6" stop-color="#0a0d1b"/>
+      <stop offset="1" stop-color="#151027"/>
+    </linearGradient>
+    <linearGradient id="carBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#79ffff"/>
+      <stop offset="0.32" stop-color="#18cdd9"/>
+      <stop offset="0.7" stop-color="#126b92"/>
+      <stop offset="1" stop-color="#092e53"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9fbff" stop-opacity="0.9"/>
+      <stop offset="0.35" stop-color="#21466c"/>
+      <stop offset="1" stop-color="#090d24"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1a1"/>
+      <stop offset="0.45" stop-color="#ff9e32"/>
+      <stop offset="1" stop-color="#ff4b2b"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#070615" stop-opacity="0.98"/>
+      <stop offset="0.5" stop-color="#070615" stop-opacity="0.62"/>
+      <stop offset="1" stop-color="#070615" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grain" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 11H12" stroke="#fff" stroke-opacity="0.025"/>
+    </pattern>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="16"/></filter>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <ellipse cx="1010" cy="260" rx="440" ry="360" fill="url(#pink)"/>
+  <ellipse cx="790" cy="560" rx="420" ry="260" fill="url(#cyan)"/>
+
+  <g opacity="0.55" fill="#0b0b20" stroke="#35244f" stroke-width="2">
+    <path d="M0 80H150V20H260V130H360V62H470V180H580V96H690V156H800V44H910V138H1020V76H1130V148H1280V300H0Z"/>
+    <path d="M0 300H180V220H300V286H430V190H550V278H690V214H820V292H960V206H1080V274H1200V214H1280V370H0Z"/>
+  </g>
+  <g stroke="#26f4ee" stroke-width="2" opacity="0.5" filter="url(#glow)">
+    <path d="M150 20V0H260M800 44V0H910M430 190V140H550M960 206V154H1080"/>
+  </g>
+  <g fill="#ff42b0" opacity="0.6" filter="url(#glow)">
+    <rect x="183" y="245" width="64" height="4"/><rect x="720" y="238" width="58" height="4"/>
+    <rect x="1100" y="290" width="76" height="4"/><rect x="332" y="94" width="56" height="4"/>
+  </g>
+
+  <path d="M668-80L1245-80L1010 800L378 800Z" fill="#030611" opacity="0.7" transform="translate(45 0)"/>
+  <path d="M690-80L1210-80L1005 800L415 800Z" fill="url(#asphalt)" stroke="#3a3158" stroke-width="4"/>
+  <path d="M690-80L725-80L462 800H415Z" fill="#0a0b1b"/>
+  <path d="M1175-80L1210-80L1005 800H958Z" fill="#0a0b1b"/>
+
+  <g fill="none" stroke-linecap="round">
+    <path d="M702-80L442 800" stroke="#20f4ee" stroke-width="8" filter="url(#glow)"/>
+    <path d="M1198-80L977 800" stroke="#ff4a9f" stroke-width="8" filter="url(#glow)"/>
+    <path d="M788-80L571 800M886-80L708 800M984-80L845 800" stroke="#e8e5ff" stroke-opacity="0.45" stroke-width="5" stroke-dasharray="42 46"/>
+    <path d="M753-80L506 800M1125-80L900 800" stroke="#ffffff" stroke-opacity="0.1" stroke-width="2"/>
+  </g>
+
+  <g opacity="0.75" filter="url(#glow)">
+    <path d="M742 20C772 182 662 377 562 640" fill="none" stroke="#16f1ef" stroke-width="14" stroke-linecap="round"/>
+    <path d="M742 20C772 182 662 377 562 640" fill="none" stroke="#d8ffff" stroke-width="3" stroke-linecap="round"/>
+    <path d="M1110 16C1092 176 1016 370 932 646" fill="none" stroke="#ff6a2c" stroke-width="13" stroke-linecap="round"/>
+    <path d="M1110 16C1092 176 1016 370 932 646" fill="none" stroke="#fff0a3" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g fill="#ff43ae" filter="url(#glow)">
+    <path d="M673 54L689 54L676 128L658 128Z"/>
+    <path d="M1164 282L1180 282L1160 356L1142 356Z"/>
+  </g>
+
+  <g transform="translate(820 390) rotate(18)" filter="url(#glow)">
+    <ellipse cx="8" cy="24" rx="105" ry="194" fill="#00040e" opacity="0.7" filter="url(#blur)"/>
+    <g fill="#050817" stroke="#2bd7df" stroke-width="3">
+      <rect x="-91" y="-116" width="31" height="78" rx="11"/>
+      <rect x="60" y="-116" width="31" height="78" rx="11"/>
+      <rect x="-91" y="58" width="31" height="82" rx="11"/>
+      <rect x="60" y="58" width="31" height="82" rx="11"/>
+    </g>
+    <path d="M-72-166L-48-194H48L72-166L91-74L76 112L52 178H-52L-76 112L-91-74Z" fill="url(#carBody)" stroke="#a9ffff" stroke-width="4"/>
+    <path d="M-55-158L-35-184H35L55-158L41-92H-41Z" fill="#0a1730" stroke="#53e8ef" stroke-width="3"/>
+    <path d="M-38-172H38L31-139H-31Z" fill="#ff8a32" opacity="0.82"/>
+    <path d="M-50-76L50-76L65 32L-65 32Z" fill="url(#glass)" stroke="#64f5f4" stroke-width="3"/>
+    <path d="M-40-63L40-63L48-10H-48Z" fill="#173553" opacity="0.75"/>
+    <path d="M-64 45H64L74 112H-74Z" fill="#0c4868" stroke="#36dce4" stroke-width="3"/>
+    <path d="M-52 126H52L43 166H-43Z" fill="#09283e" stroke="#36dce4" stroke-width="3"/>
+    <path d="M-76 98L-51 94M51 94L76 98" stroke="#ff6a2c" stroke-width="8"/>
+    <path d="M-67-88L-42-86M42-86L67-88" stroke="#eaffff" stroke-width="9" filter="url(#glow)"/>
+    <path d="M-62 142L-39 137M39 137L62 142" stroke="#ff3b58" stroke-width="8" filter="url(#glow)"/>
+    <path d="M0-78V170" stroke="#b9ffff" stroke-opacity="0.35" stroke-width="3"/>
+    <path d="M-82-34L-58-20L-57 54L-81 68M82-34L58-20L57 54L81 68" fill="none" stroke="#ff8738" stroke-width="7"/>
+    <rect x="-75" y="-4" width="150" height="9" rx="4" fill="#07111f" opacity="0.65"/>
+  </g>
+
+  <g fill="#fff" opacity="0.75">
+    <circle cx="770" cy="174" r="2"/><circle cx="1090" cy="342" r="2"/><circle cx="694" cy="432" r="1.5"/>
+    <circle cx="1018" cy="114" r="1.5"/><circle cx="862" cy="618" r="2"/><circle cx="1140" cy="536" r="1.5"/>
+  </g>
+  <rect width="1280" height="720" fill="url(#grain)"/>
+  <rect width="1280" height="720" fill="url(#shade)"/>
+
+  <g font-family="Arial, Helvetica, sans-serif">
+    <g transform="translate(76 66)">
+      <rect width="224" height="30" rx="15" fill="#17132d" stroke="#b95cff" stroke-opacity="0.55"/>
+      <circle cx="17" cy="15" r="4" fill="#b95cff" filter="url(#glow)"/>
+      <text x="32" y="20" fill="#ead9ff" font-size="12" font-weight="700" letter-spacing="3">MIDNIGHT CIRCUIT</text>
+    </g>
+    <text x="72" y="218" fill="#f8f7ff" font-size="90" font-weight="900" letter-spacing="-5">NEON</text>
+    <text x="72" y="310" fill="#ff9138" font-size="90" font-weight="900" letter-spacing="-5" filter="url(#glow)">DRIFT</text>
+    <path d="M76 340H382" stroke="#20f4ee" stroke-width="5"/>
+    <text x="76" y="382" fill="#c8c4dc" font-size="18" font-weight="600" letter-spacing="1">NO BRAKES. NO LIMITS.</text>
+    <g transform="translate(76 424)">
+      <rect width="144" height="42" rx="8" fill="#20f4ee" fill-opacity="0.1" stroke="#20f4ee" stroke-opacity="0.5"/>
+      <text x="18" y="27" fill="#d9feff" font-size="13" font-weight="700" letter-spacing="2">4 LANES</text>
+      <rect x="158" width="154" height="42" rx="8" fill="#ff783f" fill-opacity="0.1" stroke="#ff783f" stroke-opacity="0.5"/>
+      <text x="176" y="27" fill="#ffe1cf" font-size="13" font-weight="700" letter-spacing="2">NITRO READY</text>
+    </g>
+    <text x="76" y="638" fill="#817a9f" font-size="12" font-weight="700" letter-spacing="4">ORIGINAL ARCADE SERIES // 02</text>
+    <g transform="translate(1010 596)" opacity="0.9">
+      <text x="0" y="0" fill="#a9f8ff" font-size="11" font-weight="700" letter-spacing="3">VELOCITY</text>
+      <text x="0" y="62" fill="#f8f7ff" font-size="48" font-weight="900">286</text>
+      <text x="120" y="60" fill="#ff9138" font-size="13" font-weight="700">KM/H</text>
+      <path d="M0 78H196" stroke="#20f4ee" stroke-width="3"/>
+      <path d="M0 78H142" stroke="#ff9138" stroke-width="3"/>
+    </g>
+  </g>
+</svg>

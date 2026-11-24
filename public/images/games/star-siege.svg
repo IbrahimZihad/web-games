@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Star Siege</title>
+  <desc id="desc">An original deep-space shooter cover with a cyan starfighter, orange plasma fire, alien drones and a vast violet planet.</desc>
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#050514"/>
+      <stop offset="0.5" stop-color="#170b31"/>
+      <stop offset="1" stop-color="#041a2a"/>
+    </linearGradient>
+    <radialGradient id="nebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#a239ff" stop-opacity="0.5"/>
+      <stop offset="0.48" stop-color="#5f2b9c" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#5f2b9c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueNebula" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#0adce9" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#0adce9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="planet" cx="32%" cy="25%" r="75%">
+      <stop offset="0" stop-color="#b37cff"/>
+      <stop offset="0.38" stop-color="#5a35a0"/>
+      <stop offset="0.75" stop-color="#201b50"/>
+      <stop offset="1" stop-color="#090d25"/>
+    </radialGradient>
+    <linearGradient id="ship" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d5ffff"/>
+      <stop offset="0.35" stop-color="#36edf0"/>
+      <stop offset="0.72" stop-color="#167fa9"/>
+      <stop offset="1" stop-color="#092c58"/>
+    </linearGradient>
+    <linearGradient id="enemy" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb1e1"/>
+      <stop offset="0.5" stop-color="#dd3d9d"/>
+      <stop offset="1" stop-color="#652071"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff7b0"/><stop offset="0.35" stop-color="#ff9f32"/><stop offset="1" stop-color="#ff3b65" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#050514" stop-opacity="0.97"/><stop offset="0.52" stop-color="#050514" stop-opacity="0.56"/><stop offset="1" stop-color="#050514" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#space)"/>
+  <ellipse cx="905" cy="290" rx="540" ry="410" fill="url(#nebula)"/>
+  <ellipse cx="530" cy="520" rx="470" ry="260" fill="url(#blueNebula)"/>
+
+  <g fill="#d8f8ff">
+    <circle cx="88" cy="82" r="1.6"/><circle cx="186" cy="174" r="1"/><circle cx="278" cy="70" r="2"/>
+    <circle cx="370" cy="238" r="1.4"/><circle cx="470" cy="106" r="1.2"/><circle cx="574" cy="48" r="1.8"/>
+    <circle cx="672" cy="174" r="1"/><circle cx="770" cy="76" r="2"/><circle cx="866" cy="214" r="1.3"/>
+    <circle cx="954" cy="56" r="1.5"/><circle cx="1060" cy="250" r="1"/><circle cx="1170" cy="104" r="2"/>
+    <circle cx="1240" cy="300" r="1.2"/><circle cx="1010" cy="432" r="1.6"/><circle cx="1138" cy="520" r="1.3"/>
+    <circle cx="836" cy="574" r="1.8"/><circle cx="660" cy="654" r="1"/><circle cx="464" cy="566" r="1.5"/>
+    <circle cx="308" cy="482" r="1"/><circle cx="176" cy="586" r="1.8"/><circle cx="60" cy="414" r="1.2"/>
+  </g>
+  <g fill="#9fefff" opacity="0.7" filter="url(#glow)">
+    <circle cx="198" cy="302" r="2"/><circle cx="596" cy="308" r="2"/><circle cx="1118" cy="348" r="2"/>
+    <circle cx="760" cy="496" r="1.8"/><circle cx="394" cy="654" r="2"/>
+  </g>
+
+  <g transform="translate(1090 156)">
+    <circle r="142" fill="#9d52ff" opacity="0.14" filter="url(#blur)"/>
+    <circle r="112" fill="url(#planet)" stroke="#a77aff" stroke-opacity="0.4" stroke-width="2"/>
+    <path d="M-103-36C-45-62 28-58 91-20M-110 12C-38-7 35-2 100 26M-89 61C-24 46 41 53 82 73" fill="none" stroke="#c19aff" stroke-opacity="0.16" stroke-width="9"/>
+    <path d="M-93-55A111 111 0 0 1 30-107" fill="none" stroke="#e0c8ff" stroke-opacity="0.55" stroke-width="4"/>
+    <ellipse rx="182" ry="35" fill="none" stroke="#6edfee" stroke-opacity="0.28" stroke-width="5" transform="rotate(-18)"/>
+    <ellipse rx="166" ry="25" fill="none" stroke="#ff73bf" stroke-opacity="0.2" stroke-width="2" transform="rotate(-18)"/>
+  </g>
+
+  <g transform="translate(812 224)" filter="url(#glow)">
+    <path d="M0-38L24-10L76 10L48 18L24 46L12 18L-32 26L-20 6L-58-16L-16-12Z" fill="url(#enemy)" stroke="#ffb2df" stroke-width="3"/>
+    <path d="M-18 4H28L12 19H-7Z" fill="#271038"/>
+    <circle cx="4" cy="5" r="7" fill="#ff7c5c"/>
+    <circle cx="4" cy="5" r="3" fill="#fff2c2"/>
+  </g>
+  <g transform="translate(1010 328) scale(0.78)" filter="url(#glow)">
+    <path d="M0-38L24-10L76 10L48 18L24 46L12 18L-32 26L-20 6L-58-16L-16-12Z" fill="url(#enemy)" stroke="#ffb2df" stroke-width="3"/>
+    <path d="M-18 4H28L12 19H-7Z" fill="#271038"/>
+    <circle cx="4" cy="5" r="7" fill="#ff7c5c"/>
+  </g>
+  <g transform="translate(736 372) scale(0.58)" filter="url(#glow)">
+    <path d="M0-38L24-10L76 10L48 18L24 46L12 18L-32 26L-20 6L-58-16L-16-12Z" fill="url(#enemy)" stroke="#ffb2df" stroke-width="3"/>
+    <circle cx="4" cy="5" r="7" fill="#ff7c5c"/>
+  </g>
+
+  <g fill="#ff4fa6" opacity="0.8" filter="url(#glow)">
+    <path d="M850 265L873 276L850 287L838 276Z"/>
+    <path d="M974 352L989 360L974 368L966 360Z"/>
+    <path d="M779 379L791 385L779 392L773 385Z"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <path d="M576 405L715 248" stroke="#ff633c" stroke-width="22" stroke-linecap="round" opacity="0.2" filter="url(#blur)"/>
+    <path d="M576 405L715 248" stroke="url(#beam)" stroke-width="9" stroke-linecap="round"/>
+    <path d="M556 426L686 286" stroke="#ffb23d" stroke-width="4" stroke-linecap="round"/>
+    <path d="M595 390L724 242" stroke="#fff7c2" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(540 462)" filter="url(#glow)">
+    <ellipse cy="72" rx="92" ry="25" fill="#16e9ee" opacity="0.17" filter="url(#blur)"/>
+    <path d="M0-94L28-28L92 58L31 42L0 88L-31 42L-92 58L-28-28Z" fill="url(#ship)" stroke="#baffff" stroke-width="4"/>
+    <path d="M0-78L13-18L0 34L-13-18Z" fill="#0a355d" stroke="#64f6fa" stroke-width="2"/>
+    <path d="M-27-20L-72 48L-30 36L0 66L30 36L72 48L27-20Z" fill="#11577e" opacity="0.82"/>
+    <path d="M-22 55L0 104L22 55" fill="#ff8c32" stroke="#fff0a0" stroke-width="3"/>
+    <path d="M-13 60L0 91L13 60" fill="#e9ffff"/>
+    <path d="M-82 51L-46 37M82 51L46 37" stroke="#20f4ee" stroke-width="6"/>
+    <circle cy="-8" r="11" fill="#9dffff" stroke="#eaffff" stroke-width="3"/>
+  </g>
+
+  <g fill="none" stroke="#20f4ee" stroke-opacity="0.24" stroke-width="2">
+    <circle cx="540" cy="462" r="136" stroke-dasharray="5 13"/>
+    <path d="M390 462H422M658 462H690M540 310V334M540 590V616"/>
+  </g>
+
+  <g transform="translate(955 548)" opacity="0.8">
+    <path d="M0 0H186M0 10H128M0 20H154" stroke="#a75cff" stroke-width="3"/>
+    <text x="0" y="52" fill="#cdb9ee" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="3">THREAT LEVEL 09</text>
+  </g>
+
+  <rect width="1280" height="720" fill="url(#shade)"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <g transform="translate(76 66)">
+      <rect width="222" height="30" rx="15" fill="#17122e" stroke="#a75cff" stroke-opacity="0.55"/>
+      <circle cx="17" cy="15" r="4" fill="#a75cff" filter="url(#glow)"/>
+      <text x="32" y="20" fill="#ead9ff" font-size="12" font-weight="700" letter-spacing="3">DEEP SPACE DEFENSE</text>
+    </g>
+    <text x="72" y="218" fill="#f8f7ff" font-size="88" font-weight="900" letter-spacing="-5">STAR</text>
+    <text x="72" y="310" fill="#20f4ee" font-size="88" font-weight="900" letter-spacing="-5" filter="url(#glow)">SIEGE</text>
+    <path d="M76 340H364" stroke="#ff7c3c" stroke-width="5"/>
+    <text x="76" y="382" fill="#c8c4dc" font-size="18" font-weight="600" letter-spacing="1">ONE PILOT. AN ENTIRE FLEET.</text>
+    <g transform="translate(76 424)">
+      <rect width="142" height="42" rx="8" fill="#20f4ee" fill-opacity="0.1" stroke="#20f4ee" stroke-opacity="0.5"/>
+      <text x="18" y="27" fill="#d9feff" font-size="13" font-weight="700" letter-spacing="2">WAVE COMBAT</text>
+      <rect x="156" width="164" height="42" rx="8" fill="#ff7c3c" fill-opacity="0.1" stroke="#ff7c3c" stroke-opacity="0.5"/>
+      <text x="174" y="27" fill="#ffe3d1" font-size="13" font-weight="700" letter-spacing="2">BOSS SIEGE</text>
+    </g>
+    <text x="76" y="638" fill="#817a9f" font-size="12" font-weight="700" letter-spacing="4">ORIGINAL ARCADE SERIES // 04</text>
+    <g transform="translate(1080 624)">
+      <text x="0" y="0" fill="#cdb9ee" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="3">SECTOR</text>
+      <text x="0" y="48" fill="#f8f7ff" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="900">07 // ORION</text>
+    </g>
+  </g>
+</svg>
