@@ -346,7 +346,8 @@ export const resolvers = {
       await authAdmin();
       const input = parseInput(categorySchema, args);
       try {
-        return prisma.category.create({ data: input });
+        const category = await prisma.category.create({ data: input });
+        return category;
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A category with that name or slug already exists.", "CONFLICT");
         throw error;
@@ -357,9 +358,11 @@ export const resolvers = {
       const id = parseId(args.id);
       const input = parseInput(categorySchema, args);
       try {
-        return prisma.category.update({ where: { id }, data: input });
+        const category = await prisma.category.update({ where: { id }, data: input });
+        return category;
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A category with that name or slug already exists.", "CONFLICT");
+        if (error instanceof Error && "code" in error && error.code === "P2025") fail("Category not found.", "NOT_FOUND");
         throw error;
       }
     },
@@ -368,14 +371,20 @@ export const resolvers = {
       const id = parseId(args.id);
       const count = await prisma.game.count({ where: { categoryId: id } });
       if (count > 0) fail("Move or delete the games in this category first.", "CONFLICT");
-      await prisma.category.delete({ where: { id } });
+      try {
+        await prisma.category.delete({ where: { id } });
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "P2025") fail("Category not found.", "NOT_FOUND");
+        throw error;
+      }
       return true;
     },
     createTag: async (_parent: unknown, args: Record<string, unknown>) => {
       await authAdmin();
       const input = parseInput(tagSchema, args);
       try {
-        return prisma.tag.create({ data: input });
+        const tag = await prisma.tag.create({ data: input });
+        return tag;
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A tag with that name or slug already exists.", "CONFLICT");
         throw error;
@@ -386,15 +395,23 @@ export const resolvers = {
       const id = parseId(args.id);
       const input = parseInput(tagSchema, args);
       try {
-        return prisma.tag.update({ where: { id }, data: input });
+        const tag = await prisma.tag.update({ where: { id }, data: input });
+        return tag;
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A tag with that name or slug already exists.", "CONFLICT");
+        if (error instanceof Error && "code" in error && error.code === "P2025") fail("Tag not found.", "NOT_FOUND");
         throw error;
       }
     },
     deleteTag: async (_parent: unknown, args: { id: string }) => {
       await authAdmin();
-      await prisma.tag.delete({ where: { id: parseId(args.id) } });
+      const id = parseId(args.id);
+      try {
+        await prisma.tag.delete({ where: { id } });
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "P2025") fail("Tag not found.", "NOT_FOUND");
+        throw error;
+      }
       return true;
     },
   },
