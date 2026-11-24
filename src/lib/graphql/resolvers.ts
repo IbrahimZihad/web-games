@@ -334,7 +334,10 @@ export const resolvers = {
         if (match) {
           const root = resolve(process.cwd(), "public/uploads/games");
           const target = resolve(root, match[1]);
-          if (target.startsWith(root + sep)) await rm(target, { recursive: true, force: true });
+          const sharedBuild = await prisma.game.count({ where: { embedUrl: game.embedUrl } });
+          if (sharedBuild === 0 && target.startsWith(root + sep)) {
+            await rm(target, { recursive: true, force: true });
+          }
         }
       }
       return true;

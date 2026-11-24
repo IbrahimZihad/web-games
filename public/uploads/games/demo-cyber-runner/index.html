@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Runner</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #050611; color: #f4f2ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 20%, #211445 0, #080916 45%, #03040a 100%); }
+    button { font: inherit; }
+    .stage { position: relative; width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9; overflow: hidden; background: #080a18; box-shadow: 0 0 80px #6c5ce744; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .brand { position: absolute; top: 22px; left: 26px; display: flex; align-items: center; gap: 12px; pointer-events: none; }
+    .mark { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid #64f7ff66; border-radius: 12px; background: #0b1024cc; color: #64f7ff; font-weight: 950; letter-spacing: -1px; box-shadow: 0 0 24px #64f7ff22; }
+    .kicker { color: #8d86ad; font-size: 9px; font-weight: 900; letter-spacing: 3px; }
+    h1 { margin: 3px 0 0; font-size: 20px; font-weight: 950; letter-spacing: -1px; }
+    .hud { position: absolute; top: 20px; right: 24px; display: flex; align-items: center; gap: 10px; }
+    .metric { min-width: 104px; padding: 10px 13px; border: 1px solid #ffffff14; border-radius: 12px; background: #070916bb; backdrop-filter: blur(10px); }
+    .metric span { display: block; margin-bottom: 3px; color: #827b9e; font-size: 8px; font-weight: 900; letter-spacing: 2px; }
+    .metric strong { color: #f7f4ff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 20px; letter-spacing: 1px; }
+    .metric.speed { min-width: 92px; }
+    .metric.speed strong { color: #64f7ff; }
+    .pause { height: 44px; padding: 0 15px; border: 1px solid #ffffff16; border-radius: 12px; background: #111329cc; color: #c9c4df; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; cursor: pointer; }
+    .pause:hover { border-color: #64f7ff66; color: #64f7ff; }
+    .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: linear-gradient(90deg, #050611e8, #080919a8 55%, #05061166); backdrop-filter: blur(3px); }
+    .overlay.hidden { display: none; }
+    .panel { width: min(520px, 92%); padding: clamp(22px, 4vw, 44px); border: 1px solid #8d7bff33; border-radius: 24px; background: linear-gradient(145deg, #15152ddd, #090a18ee); box-shadow: 0 28px 100px #000000aa, inset 0 1px #ffffff0d; text-align: center; }
+    .eyebrow { color: #64f7ff; font-size: 10px; font-weight: 950; letter-spacing: 4px; text-transform: uppercase; }
+    .panel h2 { margin: 14px 0 12px; font-size: clamp(34px, 6vw, 64px); font-weight: 950; line-height: .96; letter-spacing: -4px; }
+    .panel h2 em { color: #a89aff; font-style: normal; text-shadow: 0 0 30px #8d7bff66; }
+    .panel p { max-width: 400px; margin: 0 auto; color: #a7a1bd; font-size: clamp(12px, 1.7vw, 15px); line-height: 1.7; }
+    .primary { margin-top: 24px; min-width: 190px; padding: 15px 24px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #8d7bff, #5c48d7); color: white; font-size: 12px; font-weight: 950; letter-spacing: 2px; cursor: pointer; box-shadow: 0 12px 35px #6c5ce755; }
+    .primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .results { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 22px; }
+    .results.show { display: grid; }
+    .result { padding: 12px 8px; border: 1px solid #ffffff0d; border-radius: 10px; background: #05061188; }
+    .result span { display: block; color: #77718e; font-size: 8px; font-weight: 900; letter-spacing: 1.5px; }
+    .result strong { display: block; margin-top: 5px; color: #f5f2ff; font-family: ui-monospace, monospace; font-size: 18px; }
+    .touch { position: absolute; left: 50%; bottom: 16px; display: flex; gap: 8px; transform: translateX(-50%); }
+    .touch button { width: 46px; height: 42px; border: 1px solid #ffffff1c; border-radius: 12px; background: #0b0d20b8; color: #dcd7f2; font-size: 17px; font-weight: 900; touch-action: none; user-select: none; }
+    .touch button:active, .touch button.active { border-color: #64f7ff88; background: #64f7ff22; color: #64f7ff; }
+    @media (max-width: 640px) {
+      .brand { top: 10px; left: 10px; gap: 7px; }
+      .mark { width: 30px; height: 30px; border-radius: 8px; font-size: 12px; }
+      .kicker { font-size: 6px; letter-spacing: 1.5px; }
+      h1 { font-size: 13px; }
+      .hud { top: 8px; right: 8px; gap: 5px; }
+      .metric { min-width: 70px; padding: 6px 8px; border-radius: 8px; }
+      .metric span { font-size: 6px; letter-spacing: 1px; }
+      .metric strong { font-size: 13px; }
+      .metric.speed { display: none; }
+      .pause { height: 32px; padding: 0 9px; font-size: 7px; }
+      .touch { bottom: 8px; }
+      .touch button { width: 39px; height: 34px; border-radius: 9px; font-size: 14px; }
+      .panel { border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <canvas id="game" width="960" height="540" aria-label="Cyber Runner game canvas"></canvas>
+    <div class="brand"><div class="mark">CR</div><div><div class="kicker">NEON FORGE</div><h1>CYBER RUNNER</h1></div></div>
+    <div class="hud">
+      <div class="metric"><span>SCORE</span><strong id="score">000000</strong></div>
+      <div class="metric speed"><span>VELOCITY</span><strong id="speed">330</strong></div>
+      <button class="pause" id="pause" type="button">PAUSE</button>
+    </div>
+    <div class="overlay" id="overlay">
+      <section class="panel">
+        <div class="eyebrow" id="eyebrow">NIGHT SHIFT PROTOCOL</div>
+        <h2 id="overlayTitle">Cyber <em>Runner</em></h2>
+        <p id="overlayText">Outrun the city. Switch lanes, jump barriers, slide under lasers, and collect credits before the skyline catches you.</p>
+        <div class="results" id="results">
+          <div class="result"><span>SCORE</span><strong id="finalScore">0</strong></div>
+          <div class="result"><span>CREDITS</span><strong id="finalCoins">0</strong></div>
+          <div class="result"><span>BEST</span><strong id="finalBest">0</strong></div>
+        </div>
+        <button class="primary" id="primary" type="button">RUN THE CITY</button>
+      </section>
+    </div>
+    <div class="touch" aria-label="Touch controls">
+      <button type="button" data-action="left" aria-label="Move left">←</button>
+      <button type="button" data-action="right" aria-label="Move right">→</button>
+      <button type="button" data-action="jump" aria-label="Jump">↑</button>
+      <button type="button" data-action="slide" aria-label="Slide">↓</button>
+    </div>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const canvas = $('game');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = 960, H = 540, GROUND = 438;
+    const lanes = [300, 480, 660];
+    const scoreEl = $('score'), speedEl = $('speed'), overlay = $('overlay'), primary = $('primary'), pauseBtn = $('pause');
+    const skyline = Array.from({ length: 34 }, (_, i) => ({ x: i * 34 - 30, w: 22 + (i * 7) % 24, h: 45 + (i * 47) % 150, lights: (i * 13) % 5 }));
+    const stars = Array.from({ length: 70 }, (_, i) => ({ x: (i * 137) % W, y: (i * 61) % 260, r: i % 7 === 0 ? 1.8 : 1 }));
+    let state = 'ready', score = 0, best = 0, elapsed = 0, speed = 330, spawnTimer = 0, roadOffset = 0, publishTimer = 0, coins = 0, shake = 0;
+    let player, objects, particles;
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const fmt = (value) => Math.floor(value).toString().padStart(6, '0');
+    try { best = Number(localStorage.getItem('cyberRunnerBest')) || 0; } catch (_) {}
+
+    function publish(force = false) {
+      if (!force && publishTimer > 0) return;
+      publishTimer = .1;
+      if (window.parent !== window) {
+        try { window.parent.postMessage({ type: 'GAME_SCORE', score: Math.floor(score) }, '*'); } catch (_) {}
+      }
+    }
+    function sync() {
+      scoreEl.textContent = fmt(score);
+      speedEl.textContent = Math.round(speed);
+    }
+    function setScore(value) { score = value; sync(); publish(); }
+    function show(eyebrow, title, text, button, results = false) {
+      $('eyebrow').textContent = eyebrow;
+      $('overlayTitle').textContent = title;
+      $('overlayText').textContent = text;
+      primary.textContent = button;
+      $('results').classList.toggle('show', results);
+      overlay.classList.remove('hidden');
+    }
+    function reset() {
+      score = 0; speed = 330; elapsed = 0; spawnTimer = .75; roadOffset = 0; publishTimer = 0; coins = 0; shake = 0;
+      player = { lane: 1, x: lanes[1], height: 0, vy: 0, slide: 0, tilt: 0 };
+      objects = []; particles = [];
+      sync(); publish(true);
+    }
+    function start() {
+      reset(); state = 'playing'; overlay.classList.add('hidden'); pauseBtn.textContent = 'PAUSE';
+      last = performance.now();
+    }
+    function pause() {
+      if (state !== 'playing') return;
+      state = 'paused'; pauseBtn.textContent = 'RESUME';
+      show('RUN SUSPENDED', 'System Paused', 'Catch your breath. The city will wait, and your score will not grow while paused.', 'RESUME RUN');
+    }
+    function resume() {
+      if (state !== 'paused') return;
+      state = 'playing'; overlay.classList.add('hidden'); pauseBtn.textContent = 'PAUSE'; last = performance.now();
+    }
+    function toggle() { state === 'playing' ? pause() : state === 'paused' ? resume() : null; }
+    function end() {
+      if (state !== 'playing') return;
+      state = 'over'; pauseBtn.textContent = 'PAUSE'; publish(true); shake = 14;
+      if (score > best) { best = Math.floor(score); try { localStorage.setItem('cyberRunnerBest', String(best)); } catch (_) {} }
+      $('finalScore').textContent = Math.floor(score);
+      $('finalCoins').textContent = coins;
+      $('finalBest').textContent = best;
+      burst(player.x, GROUND - player.height - 20, '#ff4f9d', 36);
+      show('SIGNAL LOST', 'Run Over', 'The city caught your signal. Reboot, find your rhythm, and chase a cleaner line.', 'RUN AGAIN', true);
+    }
+    function move(direction) { if (state === 'playing') player.lane = clamp(player.lane + direction, 0, 2); }
+    function jump() {
+      if (state !== 'playing' || player.height > 0 || player.slide > 0) return;
+      player.vy = 760; player.height = 1;
+    }
+    function slide() {
+      if (state !== 'playing' || player.height > 0) return;
+      player.slide = .7;
+      burst(player.x, GROUND - 4, '#64f7ff', 8);
+    }
+    function burst(x, y, color, count = 12) {
+      for (let i = 0; i < count; i += 1) {
+        const angle = Math.random() * Math.PI * 2, velocity = 60 + Math.random() * 240;
+        particles.push({ x, y, vx: Math.cos(angle) * velocity, vy: Math.sin(angle) * velocity, life: .35 + Math.random() * .45, max: .8, color, size: 2 + Math.random() * 4 });
+      }
+    }
+    function addCoin(lane, y) { objects.push({ type: 'coin', lane, x: lanes[lane], y, w: 24, h: 24, counted: false, spin: Math.random() * 6 }); }
+    function spawn() {
+      const safe = Math.floor(Math.random() * 3);
+      const roll = Math.random();
+      const blocked = [0, 1, 2].filter((lane) => lane !== safe);
+      if (roll < .72) {
+        const lane = blocked[Math.floor(Math.random() * blocked.length)];
+        objects.push({ type: Math.random() < .5 ? 'crate' : 'laser', lane, x: lanes[lane], y: -90, w: Math.random() < .5 ? 58 : 112, h: 52, counted: false });
+      } else if (roll < .9) {
+        blocked.forEach((lane) => objects.push({ type: Math.random() < .55 ? 'crate' : 'laser', lane, x: lanes[lane], y: -110 - Math.random() * 25, w: 58, h: 52, counted: false }));
+      }
+      for (let i = 0; i < 3; i += 1) addCoin(safe, -170 - i * 74);
+    }
+    function hitTest(object) {
+      const bottom = GROUND - player.height;
+      const top = bottom - (player.slide > 0 ? 30 : 62);
+      const horizontal = Math.abs(object.x - player.x) < object.w / 2 + 18;
+      if (!horizontal) return false;
+      if (object.type === 'laser') return player.slide <= 0 && object.y + 16 > top && object.y < bottom;
+      return object.y + object.h > top + 7 && object.y < bottom - 5;
+    }
+    function update(dt) {
+      elapsed += dt; speed = Math.min(760, 330 + elapsed * 7.5); roadOffset = (roadOffset + speed * dt) % 74;
+      score += dt * speed * .075; publishTimer = Math.max(0, publishTimer - dt); shake = Math.max(0, shake - dt * 30);
+      player.x = lerp(player.x, lanes[player.lane], 1 - Math.pow(.0008, dt));
+      player.tilt = lerp(player.tilt, (lanes[player.lane] - player.x) * .012, 1 - Math.pow(.01, dt));
+      if (player.height > 0 || player.vy > 0) {
+        player.height += player.vy * dt; player.vy -= 2050 * dt;
+        if (player.height <= 0) { player.height = 0; player.vy = 0; burst(player.x, GROUND, '#8d7bff', 7); }
+      }
+      player.slide = Math.max(0, player.slide - dt);
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) { spawn(); spawnTimer = Math.max(.68, 1.16 - elapsed * .006) * (.86 + Math.random() * .28); }
+      for (const object of objects) {
+        object.y += speed * dt;
+        if (object.type === 'coin') object.spin += dt * 7;
+        if (object.type === 'coin') {
+          const bottom = GROUND - player.height, top = bottom - (player.slide > 0 ? 30 : 62);
+          if (Math.abs(object.x - player.x) < 38 && object.y > top - 18 && object.y < bottom + 18) {
+            object.dead = true; coins += 1; setScore(score + 50); burst(object.x, object.y, '#ffd166', 12);
+          }
+        } else {
+          if (!object.counted && object.y > GROUND + 20) { object.counted = true; setScore(score + 20); }
+          if (!object.dead && hitTest(object)) { object.dead = true; end(); }
+        }
+      }
+      objects = objects.filter((object) => !object.dead && object.y < H + 100);
+      for (const particle of particles) {
+        particle.x += particle.vx * dt; particle.y += particle.vy * dt; particle.vy += 380 * dt; particle.life -= dt;
+      }
+      particles = particles.filter((particle) => particle.life > 0);
+      sync();
+    }
+    function roundedRect(x, y, w, h, radius, fill, stroke, lineWidth = 1) {
+      const r = Math.min(radius, w / 2, h / 2);
+      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
+    }
+    function line(x1, y1, x2, y2, color, width = 1, blur = 0) {
+      ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.shadowColor = color; ctx.shadowBlur = blur;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+    }
+    function drawBackground() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, H);
+      gradient.addColorStop(0, '#070819'); gradient.addColorStop(.52, '#21113f'); gradient.addColorStop(1, '#090a18');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, W, H);
+      const glow = ctx.createRadialGradient(735, 120, 10, 735, 120, 210);
+      glow.addColorStop(0, '#ff4f9d33'); glow.addColorStop(1, '#ff4f9d00'); ctx.fillStyle = glow; ctx.fillRect(500, 0, 460, 360);
+      for (const star of stars) { ctx.globalAlpha = .35 + (star.y % 5) * .12; ctx.fillStyle = '#d9d2ff'; ctx.beginPath(); ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ff77bd18'; ctx.beginPath(); ctx.arc(760, 112, 54, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ff8ccc44'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(760, 112, 54, 0, Math.PI * 2); ctx.stroke();
+      for (let i = 0; i < 5; i += 1) line(715 + i * 22, 112, 715 + i * 22, 167, '#ff8ccc22', 3);
+      for (const building of skyline) {
+        const x = ((building.x - roadOffset * .08) % (W + 80) + W + 80) % (W + 80) - 40;
+        const y = 330 - building.h;
+        ctx.fillStyle = iColor(building); ctx.fillRect(x, y, building.w, building.h + 110);
+        ctx.fillStyle = '#0a0b1b'; ctx.fillRect(x + 5, y + 8, Math.max(2, building.w - 10), 3);
+        for (let row = 0; row < 5; row += 1) for (let col = 0; col < 2; col += 1) {
+          if ((row + col + building.lights) % 3 === 0) continue;
+          ctx.fillStyle = (row + col) % 2 ? '#64f7ff55' : '#ff6bb577'; ctx.fillRect(x + 7 + col * 9, y + 20 + row * 18, 4, 7);
+        }
+      }
+      function iColor(building) { return building.lights % 2 ? '#111027' : '#0d1023'; }
+      const road = ctx.createLinearGradient(0, 330, 0, H);
+      road.addColorStop(0, '#11132a'); road.addColorStop(1, '#050610'); ctx.fillStyle = road; ctx.fillRect(0, 330, W, H - 330);
+      ctx.fillStyle = '#64f7ff'; ctx.fillRect(0, 330, W, 2); ctx.fillStyle = '#64f7ff33'; ctx.fillRect(0, 336, W, 6);
+      for (let y = 350 + roadOffset; y < H; y += 74) {
+        line(190, y, 770, y, '#8d7bff16', 1);
+        line(390, y, 390, y + 30, '#64f7ff28', 2);
+        line(570, y, 570, y + 30, '#64f7ff28', 2);
+      }
+      line(190, 340, 190, H, '#ff4f9d66', 3, 10); line(770, 340, 770, H, '#ff4f9d66', 3, 10);
+      ctx.fillStyle = '#05061188'; ctx.fillRect(0, GROUND + 62, W, H - GROUND - 62);
+    }
+    function drawCoin(object) {
+      const width = Math.max(4, Math.abs(Math.cos(object.spin)) * 12);
+      ctx.save(); ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 18; ctx.fillStyle = '#ffd166';
+      ctx.beginPath(); ctx.ellipse(object.x, object.y, width, 12, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0; ctx.strokeStyle = '#fff1a8'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+    }
+    function drawObstacle(object) {
+      ctx.save();
+      if (object.type === 'crate') {
+        roundedRect(object.x - object.w / 2, object.y, object.w, object.h, 8, '#241536', '#ff4f9d', 2);
+        line(object.x - object.w / 2 + 8, object.y + 10, object.x + object.w / 2 - 8, object.y + object.h - 10, '#ff4f9d88', 3);
+        line(object.x + object.w / 2 - 8, object.y + 10, object.x - object.w / 2 + 8, object.y + object.h - 10, '#ff4f9d88', 3);
+        ctx.fillStyle = '#ff4f9d'; ctx.fillRect(object.x - 14, object.y + 20, 28, 5);
+      } else {
+        const beamY = object.y + 18;
+        roundedRect(object.x - object.w / 2 - 6, object.y - 20, 12, 92, 5, '#18142c', '#8d7bff', 2);
+        roundedRect(object.x + object.w / 2 - 6, object.y - 20, 12, 92, 5, '#18142c', '#8d7bff', 2);
+        ctx.save(); ctx.shadowColor = '#ff4f9d'; ctx.shadowBlur = 22; ctx.fillStyle = '#ff4f9d'; ctx.fillRect(object.x - object.w / 2, beamY, object.w, 8); ctx.restore();
+        line(object.x - object.w / 2, beamY + 2, object.x + object.w / 2, beamY + 2, '#ffd7eb', 2);
+      }
+      ctx.restore();
+    }
+    function drawPlayer() {
+      const bottom = GROUND - player.height;
+      const sliding = player.slide > 0;
+      const height = sliding ? 30 : 62;
+      ctx.save(); ctx.translate(player.x, bottom); ctx.rotate(player.tilt);
+      ctx.globalAlpha = .28; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 4, sliding ? 48 : 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      if (sliding) {
+        roundedRect(-40, -29, 78, 27, 11, '#272147', '#64f7ff', 2);
+        roundedRect(-24, -39, 32, 18, 7, '#d9d5ff', '#64f7ff', 2);
+        line(-35, -5, -62, 1, '#64f7ff', 5, 12); line(28, -5, 54, -2, '#ff4f9d', 5, 12);
+      } else {
+        const stride = Math.sin(elapsed * 18) * 8;
+        line(-10, -20, -16 - stride, -2, '#64f7ff', 8, 8); line(12, -20, 17 + stride, -2, '#ff4f9d', 8, 8);
+        roundedRect(-22, -height, 44, height - 17, 10, '#272147', '#a89aff', 2);
+        roundedRect(-18, -height + 8, 36, 19, 7, '#080b1b', '#64f7ff', 2);
+        ctx.fillStyle = '#64f7ff'; ctx.fillRect(-11, -height + 14, 22, 4);
+        line(-18, -34, -34, -23 + stride * .4, '#d9d5ff', 7, 5); line(18, -34, 34, -23 - stride * .4, '#d9d5ff', 7, 5);
+        ctx.fillStyle = '#ff4f9d'; ctx.fillRect(-15, -25, 30, 4);
+      }
+      ctx.restore();
+    }
+    function drawParticles() {
+      for (const particle of particles) {
+        ctx.globalAlpha = clamp(particle.life / particle.max, 0, 1); ctx.fillStyle = particle.color; ctx.shadowColor = particle.color; ctx.shadowBlur = 8;
+        ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+      }
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+    function draw() {
+      ctx.save();
+      if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+      drawBackground();
+      for (const object of objects) object.type === 'coin' ? drawCoin(object) : drawObstacle(object);
+      drawPlayer(); drawParticles();
+      ctx.restore();
+    }
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(.04, Math.max(0, (now - last) / 1000)); last = now;
+      if (state === 'playing') update(dt); else { roadOffset = (roadOffset + 12 * dt) % 74; worldTime += dt; }
+      draw(); requestAnimationFrame(loop);
+    }
+    let worldTime = 0;
+    function action(name) { if (name === 'left') move(-1); else if (name === 'right') move(1); else if (name === 'jump') jump(); else if (name === 'slide') slide(); }
+    window.addEventListener('keydown', (event) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(event.code)) event.preventDefault();
+      if (event.repeat && ['Space', 'Enter', 'KeyP', 'Escape', 'ArrowUp', 'KeyW', 'ArrowDown', 'KeyS'].includes(event.code)) return;
+      if (event.code === 'KeyP' || event.code === 'Escape') { toggle(); return; }
+      if (state !== 'playing') {
+        if (event.code === 'Enter' || event.code === 'Space') { event.preventDefault(); state === 'paused' ? resume() : start(); }
+        return;
+      }
+      if (event.code === 'ArrowLeft' || event.code === 'KeyA') move(-1);
+      else if (event.code === 'ArrowRight' || event.code === 'KeyD') move(1);
+      else if (event.code === 'Space' || event.code === 'ArrowUp' || event.code === 'KeyW') jump();
+      else if (event.code === 'ArrowDown' || event.code === 'KeyS') slide();
+    });
+    primary.addEventListener('click', () => state === 'paused' ? resume() : start());
+    pauseBtn.addEventListener('click', toggle);
+    document.querySelectorAll('[data-action]').forEach((button) => {
+      const name = button.dataset.action;
+      button.addEventListener('pointerdown', (event) => { event.preventDefault(); button.classList.add('active'); try { button.setPointerCapture(event.pointerId); } catch (_) {} action(name); });
+      const release = (event) => { event.preventDefault(); button.classList.remove('active'); };
+      button.addEventListener('pointerup', release); button.addEventListener('pointercancel', release);
+      button.addEventListener('click', (event) => { if (event.detail === 0) action(name); });
+    });
+    window.addEventListener('blur', () => { if (state === 'playing') pause(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing') pause(); });
+    reset();
+    show('NIGHT SHIFT PROTOCOL', 'Cyber Runner', 'Outrun the city. Switch lanes, jump barriers, slide under lasers, and collect credits before the skyline catches you.', 'RUN THE CITY');
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
