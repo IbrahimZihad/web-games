@@ -172,7 +172,7 @@ export function GameExperience({ game }: { game: GameDTO }) {
                 src={game.embedUrl}
                 title={`${game.title} game`}
                 className="h-full w-full border-0 bg-black"
-                sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"
+                sandbox="allow-scripts allow-pointer-lock allow-forms"
                 allow="autoplay; fullscreen; gamepad"
                 onLoad={() => setLoading(false)}
               />
