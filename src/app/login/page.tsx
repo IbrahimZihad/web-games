@@ -4,9 +4,17 @@ import { redirect } from "next/navigation";
 import { Gamepad2, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { AuthForm } from "@/components/auth-form";
 import { getCurrentUser } from "@/lib/auth";
+import { buildMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Sign in" };
+
+export const metadata = buildMetadata({
+  title: "Sign in to Nexus Play",
+  description: "Sign in to sync your favorite browser games, play history, ratings, and comments across devices.",
+  path: "/login",
+  keywords: ["Nexus Play sign in", "player account", "sync game favorites"],
+  noindex: true,
+});
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const [{ next = "/" }, user] = await Promise.all([searchParams, getCurrentUser()]);

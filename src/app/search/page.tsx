@@ -1,9 +1,16 @@
-import type { Metadata } from "next";
 import { BrowseView } from "@/components/browse-view";
 import { getGames } from "@/lib/data";
+import { buildMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Search" };
+
+export const metadata = buildMetadata({
+  title: "Search HTML5 Browser Games",
+  description: "Search Nexus Play by game title, category, or tag to find your next free browser game.",
+  path: "/search",
+  keywords: ["search browser games", "find HTML5 games", "online game search"],
+  noindex: true,
+});
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;

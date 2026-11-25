@@ -1,8 +1,14 @@
-import type { Metadata } from "next";
 import { Bookmark } from "lucide-react";
 import { LibraryGrid } from "@/components/library-grid";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Favorites" };
+export const metadata = buildMetadata({
+  title: "Your Favorite Browser Games",
+  description: "View your personal shortlist of favorite HTML5 browser games on Nexus Play.",
+  path: "/favorites",
+  keywords: ["favorite browser games", "saved HTML5 games", "personal game library"],
+  noindex: true,
+});
 
 export default function FavoritesPage() {
   return (

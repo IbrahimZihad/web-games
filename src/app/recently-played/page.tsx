@@ -1,8 +1,14 @@
-import type { Metadata } from "next";
 import { Clock3 } from "lucide-react";
 import { LibraryGrid } from "@/components/library-grid";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Recently played" };
+export const metadata = buildMetadata({
+  title: "Your Recently Played Games",
+  description: "Return to the HTML5 browser games you played most recently on Nexus Play.",
+  path: "/recently-played",
+  keywords: ["recently played games", "browser game history", "continue playing HTML5 games"],
+  noindex: true,
+});
 
 export default function RecentlyPlayedPage() {
   return (
