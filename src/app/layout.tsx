@@ -3,10 +3,36 @@ import { AppProviders } from "@/components/providers";
 import { SiteChrome } from "@/components/portal-shell";
 import "./globals.css";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+const description =
+  "Discover and play curated HTML5 games instantly. Save favorites, compete with friends, and find your next obsession on Nexus Play.";
+const socialImage = {
+  url: "/og.png",
+  width: 1200,
+  height: 630,
+  alt: "Nexus Play — instant browser gaming with five original games",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: { default: "Nexus — Play something extraordinary", template: "%s | Nexus" },
-  description: "Discover and play curated HTML5 games instantly. Build your favorites, compete with friends, and find your next obsession.",
+  description,
   applicationName: "Nexus Play",
+  openGraph: {
+    title: "Nexus Play — Play something extraordinary",
+    description,
+    url: "/",
+    siteName: "Nexus Play",
+    type: "website",
+    locale: "en_US",
+    images: [socialImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nexus Play — Play something extraordinary",
+    description,
+    images: [socialImage],
+  },
 };
 
 export const viewport: Viewport = {

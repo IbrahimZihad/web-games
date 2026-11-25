@@ -1,5 +1,7 @@
 # Nexus Play
 
+![Nexus Play — instant browser gaming](public/og.png)
+
 A CrazyGames-style HTML5 game portal built with Next.js App Router, React, TypeScript, Tailwind CSS, GraphQL Yoga, Prisma, and native MySQL 8. No Docker is required or used.
 
 ## Included

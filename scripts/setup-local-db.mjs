@@ -26,8 +26,9 @@ const sql = [
   "FLUSH PRIVILEGES;",
 ].join("\n");
 
-execFileSync(mysql, ["--protocol=TCP", "-h127.0.0.1", "-P3307", "-uroot", "-e", sql], {
-  stdio: "pipe",
+execFileSync(mysql, ["--protocol=TCP", "-h127.0.0.1", "-P3307", "-uroot"], {
+  input: sql,
+  stdio: ["pipe", "pipe", "pipe"],
 });
 
 mkdirSync(resolve(root, ".runtime/mysql/tmp"), { recursive: true });
