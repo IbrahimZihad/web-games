@@ -23,6 +23,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import type { SessionUser } from "@/lib/types";
 import { categorySchema, gameInputSchema, loginSchema, registerSchema, tagSchema } from "@/lib/validation";
+import { withGamePublishLock } from "@/lib/zip";
 
 export interface GraphQLContext {
   request: NextRequest;
@@ -66,11 +67,26 @@ function parseInput<T>(schema: { safeParse: (value: unknown) => { success: true;
   return result.data;
 }
 
-function enforceRateLimit(request: NextRequest, scope: string, limit: number, windowMs: number) {
-  const result = checkRateLimit(getClientKey(request, scope), limit, windowMs);
+async function enforceRateLimit(
+  request: NextRequest,
+  scope: string,
+  limit: number,
+  windowMs: number,
+  subject?: string,
+  includeUserAgent = false,
+) {
+  const result = await checkRateLimit(
+    getClientKey(request, scope, subject, includeUserAgent),
+    limit,
+    windowMs,
+  );
   if (!result.allowed) {
     throw new GraphQLError(`Too many requests. Try again in ${result.retryAfter} seconds.`, {
-      extensions: { code: "RATE_LIMITED" },
+      extensions: {
+        code: "RATE_LIMITED",
+        retryAfter: result.retryAfter,
+        http: { status: 429, headers: { "Retry-After": String(result.retryAfter) } },
+      },
     });
   }
 }
@@ -92,7 +108,8 @@ export const resolvers = {
         offset: args.offset as number | undefined,
       }),
     gameBySlug: (_parent: unknown, args: { slug: string }) => getGameBySlug(args.slug),
-    gamesByIds: (_parent: unknown, args: { ids: unknown[] }) => getGamesByIds([...new Set(args.ids.map(parseId))]),
+    gamesByIds: (_parent: unknown, args: { ids: unknown[] }) =>
+      getGamesByIds([...new Set(args.ids.slice(0, 200).map(parseId))]),
     gameById: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       authAdmin(context);
       return getGameById(parseId(args.id));
@@ -121,7 +138,7 @@ export const resolvers = {
   },
   Mutation: {
     register: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
-      enforceRateLimit(context.request, "auth:register", 5, 15 * 60 * 1000);
+      await enforceRateLimit(context.request, "auth:register", 5, 15 * 60 * 1000);
       const input = parseInput(registerSchema, args);
       const existing = await prisma.user.findFirst({
         where: { OR: [{ email: input.email }, { username: input.username }] },
@@ -141,7 +158,7 @@ export const resolvers = {
       return user;
     },
     login: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
-      enforceRateLimit(context.request, "auth:login", 10, 15 * 60 * 1000);
+      await enforceRateLimit(context.request, "auth:login", 10, 15 * 60 * 1000);
       const input = parseInput(loginSchema, args);
       const user = await prisma.user.findUnique({ where: { email: input.email } });
       if (!user?.isActive || !(await bcrypt.compare(input.password, user.passwordHash))) {
@@ -156,22 +173,27 @@ export const resolvers = {
       return true;
     },
     recordPlay: async (_parent: unknown, args: { gameId: string }, context: GraphQLContext) => {
-      enforceRateLimit(context.request, "play", 60, 60 * 1000);
+      const fingerprint = context.user
+        ? null
+        : createHash("sha256")
+            .update(`${getClientKey(context.request, "guest", undefined, true)}:${context.request.headers.get("user-agent") || "unknown"}`)
+            .digest("hex")
+            .slice(0, 128);
+      await enforceRateLimit(
+        context.request,
+        "play",
+        60,
+        60 * 1000,
+        context.user ? `user:${context.user.id}` : `guest:${fingerprint}`,
+      );
+
       const gameId = parseId(args.gameId);
       const game = await prisma.game.findUnique({ where: { id: gameId }, select: { status: true } });
       if (!game || game.status !== "PUBLISHED") fail("Game not found.", "NOT_FOUND");
 
-      const fingerprint = context.user
-        ? null
-        : createHash("sha256")
-            .update(getClientKey(context.request, "guest") + context.request.headers.get("user-agent"))
-            .digest("hex")
-            .slice(0, 128);
-
-      await prisma.$transaction([
-        prisma.game.update({ where: { id: gameId }, data: { playCount: { increment: 1 } } }),
-        prisma.playHistory.create({ data: { gameId, userId: context.user?.id, sessionFingerprint: fingerprint } }),
-      ]);
+      await prisma.playHistory.create({
+        data: { gameId, userId: context.user?.id, sessionFingerprint: fingerprint, countedAt: null },
+      });
       return true;
     },
     toggleFavorite: async (_parent: unknown, args: { gameId: string }, context: GraphQLContext) => {
@@ -227,21 +249,23 @@ export const resolvers = {
           dislikesCount: { increment: dislikes },
         },
       });
+      invalidateCatalog();
       return getGameById(gameId, false);
     },
     addComment: async (_parent: unknown, args: { gameId: string; body: string }, context: GraphQLContext) => {
       const user = authUser(context);
-      enforceRateLimit(context.request, `comment:${user.id}`, 10, 10 * 60 * 1000);
+      await enforceRateLimit(context.request, "comment", 10, 10 * 60 * 1000, `user:${user.id}`);
       const gameId = parseId(args.gameId);
       const body = args.body.trim();
       if (!body || body.length > 1000) fail("Comments must be between 1 and 1,000 characters.");
-      const game = await prisma.game.findUnique({ where: { id: gameId }, select: { id: true } });
-      if (!game) fail("Game not found.", "NOT_FOUND");
+      const game = await prisma.game.findUnique({ where: { id: gameId }, select: { status: true } });
+      if (!game || game.status !== "PUBLISHED") fail("Game not found.", "NOT_FOUND");
 
       const comment = await prisma.comment.create({
         data: { gameId, userId: user.id, body },
         include: { user: { select: { id: true, username: true, avatarUrl: true, role: true } } },
       });
+      invalidateCatalog();
       return toComment(comment);
     },
     syncGuestLibrary: async (
@@ -250,7 +274,7 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = authUser(context);
-      const favoriteIds = [...new Set((args.favoriteGameIds || []).map(parseId))];
+      const favoriteIds = [...new Set((args.favoriteGameIds || []).slice(0, 200).map(parseId))];
       const playedIds = [...new Set((args.playedGameIds || []).map(parseId))].slice(0, 60);
       const games = await prisma.game.findMany({
         where: { id: { in: [...favoriteIds, ...playedIds] }, status: "PUBLISHED" },
@@ -264,7 +288,11 @@ export const resolvers = {
           skipDuplicates: true,
         }),
         prisma.playHistory.createMany({
-          data: playedIds.filter((id) => validIds.has(id)).map((gameId) => ({ userId: user.id, gameId })),
+          data: playedIds.filter((id) => validIds.has(id)).map((gameId) => ({
+            userId: user.id,
+            gameId,
+            countedAt: new Date(),
+          })),
         }),
       ]);
       return true;
@@ -289,14 +317,15 @@ export const resolvers = {
             tags: { create: tagIds.map((tagId) => ({ tagId })) },
           },
         });
+        invalidateCatalog();
         return getGameById(game.id);
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A game with that slug already exists.", "CONFLICT");
         throw error;
       }
     },
-    updateGame: async (_parent: unknown, args: { id: string; input: unknown }) => {
-      await authAdmin(context);
+    updateGame: async (_parent: unknown, args: { id: string; input: unknown }, context: GraphQLContext) => {
+      authAdmin(context);
       const id = parseId(args.id);
       const input = parseInput(gameInputSchema, args.input);
       const { tagIds, ...data } = input;
@@ -321,86 +350,98 @@ export const resolvers = {
             },
           },
         });
+        invalidateCatalog();
         return getGameById(id);
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A game with that slug already exists.", "CONFLICT");
         throw error;
       }
     },
-    deleteGame: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin(context);
+    deleteGame: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
+      authAdmin(context);
       const id = parseId(args.id);
       const game = await prisma.game.findUnique({ where: { id } });
       if (!game) fail("Game not found.", "NOT_FOUND");
-      await prisma.game.delete({ where: { id } });
+      const match = game.sourceType === "UPLOADED_ZIP"
+        ? game.embedUrl.match(/^\/uploads\/games\/([a-z0-9-]+)\/index\.html$/)
+        : null;
 
-      if (game.sourceType === "UPLOADED_ZIP") {
-        const match = game.embedUrl.match(/^\/uploads\/games\/([a-z0-9-]+)\/index\.html$/);
-        if (match) {
+      if (match) {
+        await withGamePublishLock(match[1], async () => {
+          await prisma.game.delete({ where: { id } });
           const root = resolve(process.cwd(), "public/uploads/games");
           const target = resolve(root, match[1]);
           const sharedBuild = await prisma.game.count({ where: { embedUrl: game.embedUrl } });
           if (sharedBuild === 0 && target.startsWith(root + sep)) {
             await rm(target, { recursive: true, force: true });
           }
-        }
+        });
+      } else {
+        await prisma.game.delete({ where: { id } });
       }
+      invalidateCatalog();
       return true;
     },
-    createCategory: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin(context);
+    createCategory: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
+      authAdmin(context);
       const input = parseInput(categorySchema, args);
       try {
         const category = await prisma.category.create({ data: input });
-        return category;
+        invalidateCatalog();
+        return { ...category, gameCount: 0 };
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A category with that name or slug already exists.", "CONFLICT");
         throw error;
       }
     },
-    updateCategory: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin(context);
+    updateCategory: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
+      authAdmin(context);
       const id = parseId(args.id);
       const input = parseInput(categorySchema, args);
       try {
         const category = await prisma.category.update({ where: { id }, data: input });
-        return category;
+        const gameCount = await prisma.game.count({ where: { categoryId: id, status: "PUBLISHED" } });
+        invalidateCatalog();
+        return { ...category, gameCount };
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A category with that name or slug already exists.", "CONFLICT");
         if (error instanceof Error && "code" in error && error.code === "P2025") fail("Category not found.", "NOT_FOUND");
         throw error;
       }
     },
-    deleteCategory: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin(context);
+    deleteCategory: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
+      authAdmin(context);
       const id = parseId(args.id);
       const count = await prisma.game.count({ where: { categoryId: id } });
       if (count > 0) fail("Move or delete the games in this category first.", "CONFLICT");
       try {
         await prisma.category.delete({ where: { id } });
+        invalidateCatalog();
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2025") fail("Category not found.", "NOT_FOUND");
         throw error;
       }
       return true;
     },
-    createTag: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin(context);
+    createTag: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
+      authAdmin(context);
       const input = parseInput(tagSchema, args);
       try {
         const tag = await prisma.tag.create({ data: input });
+        invalidateCatalog();
         return tag;
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A tag with that name or slug already exists.", "CONFLICT");
         throw error;
       }
     },
-    updateTag: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin(context);
+    updateTag: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
+      authAdmin(context);
       const id = parseId(args.id);
       const input = parseInput(tagSchema, args);
       try {
         const tag = await prisma.tag.update({ where: { id }, data: input });
+        invalidateCatalog();
         return tag;
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2002") fail("A tag with that name or slug already exists.", "CONFLICT");
@@ -408,11 +449,12 @@ export const resolvers = {
         throw error;
       }
     },
-    deleteTag: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin(context);
+    deleteTag: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
+      authAdmin(context);
       const id = parseId(args.id);
       try {
         await prisma.tag.delete({ where: { id } });
+        invalidateCatalog();
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "P2025") fail("Tag not found.", "NOT_FOUND");
         throw error;

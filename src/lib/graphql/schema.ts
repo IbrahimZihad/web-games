@@ -132,7 +132,7 @@ export const typeDefs = /* GraphQL */ `
   type Query {
     me: User
     homeFeed: HomeFeed!
-    games(categorySlug: String, tagSlug: String, search: String, status: GameStatus, featured: Boolean, trending: Boolean, sort: String, limit: Int = 24, offset: Int = 0): [Game!]!
+    games(categorySlug: String, tagSlug: String, search: String, featured: Boolean, trending: Boolean, sort: String, limit: Int = 24, offset: Int = 0): [Game!]!
     gameBySlug(slug: String!): Game
     gameById(id: ID!): Game
     gamesByIds(ids: [ID!]!): [Game!]!

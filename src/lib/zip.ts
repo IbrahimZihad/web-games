@@ -1,10 +1,11 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { lstat, mkdir, mkdtemp, realpath, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fromBufferPromise, type Entry, type ZipFile } from "yauzl";
+import { prisma } from "@/lib/prisma";
 
 const MAX_ENTRIES = 10_000;
 const MAX_UNCOMPRESSED_BYTES = 750 * 1024 * 1024;
@@ -16,8 +17,6 @@ const WINDOWS_RESERVED_NAMES = new Set([
   "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
   "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
 ]);
-
-const publishQueues = new Map<string, Promise<void>>();
 
 export class ZipError extends Error {
   readonly status: 400 | 500;
@@ -150,24 +149,20 @@ async function extractFile(zipfile: ZipFile, entry: Entry, root: string, target:
   await pipeline(source, sizeGuard, createWriteStream(target, { flags: "wx", mode: 0o600 }));
 }
 
-async function withPublishLock<T>(slug: string, operation: () => Promise<T>): Promise<T> {
-  const previous = publishQueues.get(slug) ?? Promise.resolve();
-  let release: () => void = () => undefined;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const queued = previous.catch(() => undefined).then(() => gate);
-  publishQueues.set(slug, queued);
+export async function withGamePublishLock<T>(slug: string, operation: () => Promise<T>): Promise<T> {
+  const lockName = `gameportal:upload:${createHash("sha256").update(slug).digest("hex").slice(0, 32)}`;
+  return prisma.$transaction(async (tx) => {
+    const [lock] = await tx.$queryRaw<Array<{ acquired: number | null }>>`
+      SELECT GET_LOCK(${lockName}, 30) AS acquired
+    `;
+    if (lock?.acquired !== 1) throw new ZipError("Another game build update is in progress.", 500);
 
-  await previous.catch(() => undefined);
-  try {
-    return await operation();
-  } finally {
-    release();
-    if (publishQueues.get(slug) === queued) {
-      publishQueues.delete(slug);
+    try {
+      return await operation();
+    } finally {
+      await tx.$queryRaw`SELECT RELEASE_LOCK(${lockName})`;
     }
-  }
+  }, { maxWait: 10_000, timeout: 60_000 });
 }
 
 async function publishBuild(
@@ -176,7 +171,7 @@ async function publishBuild(
   runtimeRoot: string,
   destination: string,
 ): Promise<void> {
-  await withPublishLock(slug, async () => {
+  await withGamePublishLock(slug, async () => {
     const backupPath = path.join(runtimeRoot, `.${slug}-${randomUUID()}.backup`);
     let backup: string | undefined;
     let published = false;

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { AuthError, requireAdmin } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { storageService } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -27,11 +27,6 @@ class HttpError extends Error {
     super(message);
     this.name = "HttpError";
   }
-}
-
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || request.headers.get("x-real-ip")?.trim() || "local";
 }
 
 function createBoundedRequest(request: Request, maxBytes: number): Request {
@@ -122,9 +117,9 @@ function errorResponse(error: unknown): Response {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
 
-    const rateLimit = checkRateLimit(`media:${getClientIp(request)}`, 30, 60 * 60 * 1000);
+    const rateLimit = await checkRateLimit(getClientKey(request, "media", `user:${admin.id}`), 30, 60 * 60 * 1000);
     if (!rateLimit.allowed) {
       return Response.json(
         { error: "Too many media uploads. Please try again later." },

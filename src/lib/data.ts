@@ -241,7 +241,7 @@ async function getHomeFeedUncached(): Promise<HomeFeed> {
     findGameCards(normalizeGameFilters({ sort: "newest", limit: 12 })),
     prisma.category.findMany({ orderBy: [{ displayOrder: "asc" }, { name: "asc" }] }),
     getCategoryCounts(),
-    prisma.$queryRaw<Array<{ id: number; categoryId: number; rowNumber: bigint }>>`
+    prisma.$queryRaw<Array<{ id: number | bigint; categoryId: number | bigint; rowNumber: bigint }>>`
       SELECT id, categoryId, rowNumber FROM (
         SELECT g.id, g.categoryId,
           ROW_NUMBER() OVER (
@@ -256,7 +256,7 @@ async function getHomeFeedUncached(): Promise<HomeFeed> {
     `,
   ]);
 
-  const rankedIds = ranked.map((row) => row.id);
+  const rankedIds = ranked.map((row) => Number(row.id));
   const rankedGames = rankedIds.length
     ? await prisma.game.findMany({ where: { id: { in: rankedIds } }, include: gameCardInclude })
     : [];
@@ -267,9 +267,9 @@ async function getHomeFeedUncached(): Promise<HomeFeed> {
 
   const categoryRows = categories.flatMap((category) => {
     const games = ranked
-      .filter((row) => row.categoryId === category.id)
+      .filter((row) => Number(row.categoryId) === category.id)
       .sort((a, b) => Number(a.rowNumber - b.rowNumber))
-      .map((row) => gamesById.get(row.id))
+      .map((row) => gamesById.get(Number(row.id)))
       .filter((game): game is GameDTO => Boolean(game));
     return games.length ? [{ category: toCategory(category, counts.get(category.id) ?? 0), games }] : [];
   });
@@ -305,7 +305,7 @@ export async function getUserLibrary(userId: number) {
   const [favorites, history] = await Promise.all([
     prisma.userFavorite.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" }],
+      orderBy: [{ createdAt: "desc" }],
       take: MAX_LIBRARY_GAMES,
       select: { gameId: true },
     }),

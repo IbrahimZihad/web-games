@@ -4,9 +4,14 @@ import { prisma } from "@/lib/prisma";
 const DEFAULT_BATCH_SIZE = 5_000;
 const RETENTION_BATCH_SIZE = 2_000;
 
-export async function aggregatePlayCounts(batchSize = DEFAULT_BATCH_SIZE): Promise<number> {
-  const limit = Math.min(Math.max(Math.trunc(batchSize), 1), 20_000);
+function isRetryableDatabaseError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error) || error.code !== "P2010") return false;
+  const meta = "meta" in error ? error.meta : null;
+  return typeof meta === "object" && meta !== null && "code" in meta &&
+    (meta.code === 1213 || meta.code === 1205);
+}
 
+async function aggregateBatch(limit: number): Promise<number> {
   return prisma.$transaction(async (tx) => {
     const claimed = await tx.$queryRaw<Array<{ id: bigint; gameId: number }>>`
       SELECT id, gameId
@@ -36,7 +41,23 @@ export async function aggregatePlayCounts(batchSize = DEFAULT_BATCH_SIZE): Promi
     });
 
     return claimed.length;
-  }, { maxWait: 10_000, timeout: 60_000 });
+  }, {
+    maxWait: 10_000,
+    timeout: 60_000,
+    isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+  });
+}
+
+export async function aggregatePlayCounts(batchSize = DEFAULT_BATCH_SIZE): Promise<number> {
+  const limit = Math.min(Math.max(Math.trunc(batchSize), 1), 20_000);
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await aggregateBatch(limit);
+    } catch (error) {
+      if (!isRetryableDatabaseError(error) || attempt >= 4) throw error;
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, 25 * 2 ** attempt));
+    }
+  }
 }
 
 async function pruneHistory(userId: null | { not: null }, olderThan: Date): Promise<number> {

@@ -1,5 +1,5 @@
 import { AuthError, requireAdmin } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { extractGameZip, ZipError } from "@/lib/zip";
 
 export const runtime = "nodejs";
@@ -19,11 +19,6 @@ class HttpError extends Error {
     super(message);
     this.name = "HttpError";
   }
-}
-
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || request.headers.get("x-real-ip")?.trim() || "local";
 }
 
 function createBoundedRequest(request: Request, maxBytes: number): Request {
@@ -116,9 +111,9 @@ function errorResponse(error: unknown): Response {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
 
-    const rateLimit = checkRateLimit(`game-build:${getClientIp(request)}`, 5, 60 * 60 * 1000);
+    const rateLimit = await checkRateLimit(getClientKey(request, "game-build", `user:${admin.id}`), 5, 60 * 60 * 1000);
     if (!rateLimit.allowed) {
       return Response.json(
         { error: "Too many game build uploads. Please try again later." },

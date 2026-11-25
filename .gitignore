@@ -36,6 +36,7 @@ yarn-error.log*
 
 # isolated native MySQL runtime
 .runtime/
+/logs/
 
 # vercel
 .vercel
