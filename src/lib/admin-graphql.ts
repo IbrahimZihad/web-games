@@ -199,16 +199,13 @@ async function serverGraphqlRequest<T>(
   query: string,
   variables?: object,
 ): Promise<T> {
-  const { cookies, headers } = await import("next/headers");
-  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
-  const forwardedHost = headerStore.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost || headerStore.get("host") || "localhost:3000";
-  const forwardedProtocol = headerStore.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1");
-  const protocol = forwardedProtocol || (isLocal ? "http" : "https");
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const origin = process.env.INTERNAL_APP_URL?.trim() ||
+    `http://127.0.0.1:${process.env.PORT || 3000}`;
   const cookieHeader = cookieStore.toString();
 
-  const response = await fetch(`${protocol}://${host}/api/graphql`, {
+  const response = await fetch(`${origin.replace(/\/$/, "")}/api/graphql`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
