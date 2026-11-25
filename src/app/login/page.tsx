@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Gamepad2, ShieldCheck, Sparkles, Zap } from "lucide-react";

@@ -167,7 +167,7 @@ async function getSeoCatalogUncached() {
     prisma.tag.findMany({
       select: {
         slug: true,
-        _count: { select: { games: { where: { status: "PUBLISHED" } } } },
+        _count: { select: { games: { where: { game: { status: "PUBLISHED" } } } } },
       },
       orderBy: { name: "asc" },
     }),
