@@ -1,15 +1,44 @@
 import { FeaturedHero } from "@/components/featured-hero";
 import { CategoryTiles, ContinuePlaying } from "@/components/category-tiles";
 import { GameRow } from "@/components/game-row";
+import { JsonLd } from "@/components/json-ld";
 import { getGames, getHomeFeed } from "@/lib/data";
+import { buildMetadata, collectionJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = buildMetadata({
+  title: "Nexus Play — Free HTML5 Browser Games",
+  description:
+    "Play free HTML5 browser games instantly. Discover trending arcade games, save favorites, and enjoy original games with no downloads or installs.",
+  path: "/",
+  keywords: [
+    "Nexus Play",
+    "free HTML5 browser games",
+    "play free games online",
+    "browser games no download",
+    "instant play games",
+    "online arcade games",
+    "HTML5 games",
+  ],
+});
+
 export default async function HomePage() {
   const [feed, topRated] = await Promise.all([getHomeFeed(), getGames({ sort: "rating", limit: 12 })]);
+  const featuredGames = Array.from(
+    new Map([...feed.featured, ...feed.trending, ...feed.newReleases].map((game) => [game.id, game])).values(),
+  ).slice(0, 12);
 
   return (
     <div>
+      <JsonLd
+        data={collectionJsonLd(
+          featuredGames,
+          "Free HTML5 browser games",
+          "Trending, new, and original browser games available to play instantly on Nexus Play.",
+          "/",
+        )}
+      />
       <FeaturedHero games={feed.featured} />
       <CategoryTiles categories={feed.categoryRows.map((row) => row.category)} />
       <ContinuePlaying />

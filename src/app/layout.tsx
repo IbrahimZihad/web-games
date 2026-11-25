@@ -1,37 +1,42 @@
 import type { Metadata, Viewport } from "next";
 import { AppProviders } from "@/components/providers";
 import { SiteChrome } from "@/components/portal-shell";
+import { JsonLd } from "@/components/json-ld";
+import {
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_NAME,
+  SITE_URL,
+  SOCIAL_IMAGE,
+  websiteJsonLd,
+} from "@/lib/seo";
 import "./globals.css";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
-const description =
-  "Discover and play curated HTML5 games instantly. Save favorites, compete with friends, and find your next obsession on Nexus Play.";
-const socialImage = {
-  url: "/og.png",
-  width: 1200,
-  height: 630,
-  alt: "Nexus Play — instant browser gaming with five original games",
-};
-
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
-  title: { default: "Nexus — Play something extraordinary", template: "%s | Nexus" },
-  description,
-  applicationName: "Nexus Play",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Nexus Play — Free HTML5 Browser Games",
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  category: "games",
+  applicationName: SITE_NAME,
+  robots: { index: true, follow: true },
   openGraph: {
-    title: "Nexus Play — Play something extraordinary",
-    description,
+    title: "Nexus Play — Free HTML5 Browser Games",
+    description: SITE_DESCRIPTION,
     url: "/",
-    siteName: "Nexus Play",
+    siteName: SITE_NAME,
     type: "website",
     locale: "en_US",
-    images: [socialImage],
+    images: [SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nexus Play — Play something extraordinary",
-    description,
-    images: [socialImage],
+    title: "Nexus Play — Free HTML5 Browser Games",
+    description: SITE_DESCRIPTION,
+    images: [SOCIAL_IMAGE],
   },
 };
 
@@ -45,6 +50,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className="h-full antialiased" data-scroll-behavior="smooth">
       <body className="min-h-full bg-[#0c0d14] text-zinc-100">
+        <JsonLd data={websiteJsonLd} />
         <AppProviders>
           <SiteChrome>{children}</SiteChrome>
         </AppProviders>

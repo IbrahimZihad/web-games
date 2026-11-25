@@ -144,6 +144,48 @@ async function getTagsUncached(): Promise<TagDTO[]> {
 
 export const getTags = unstable_cache(getTagsUncached, ["tags"], catalogCache);
 
+async function getSeoCatalogUncached() {
+  const [games, categories, tags] = await Promise.all([
+    prisma.game.findMany({
+      where: { status: "PUBLISHED" },
+      select: {
+        slug: true,
+        thumbnailUrl: true,
+        publishedAt: true,
+        updatedAt: true,
+      },
+      orderBy: { publishedAt: "desc" },
+    }),
+    prisma.category.findMany({
+      select: {
+        slug: true,
+        createdAt: true,
+        _count: { select: { games: { where: { status: "PUBLISHED" } } } },
+      },
+      orderBy: { displayOrder: "asc" },
+    }),
+    prisma.tag.findMany({
+      select: {
+        slug: true,
+        _count: { select: { games: { where: { status: "PUBLISHED" } } } },
+      },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  return {
+    games,
+    categories: categories.map((category) => ({
+      slug: category.slug,
+      createdAt: category.createdAt,
+      gameCount: category._count.games,
+    })),
+    tags: tags.map((tag) => ({ slug: tag.slug, gameCount: tag._count.games })),
+  };
+}
+
+export const getSeoCatalog = unstable_cache(getSeoCatalogUncached, ["seo-catalog"], catalogCache);
+
 async function findGameCards(filters: GameFilters): Promise<GameCardRecord[]> {
   const where: Prisma.GameWhereInput = {
     status: filters.status || "PUBLISHED",

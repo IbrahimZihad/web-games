@@ -47,7 +47,8 @@ export function FeaturedHero({ games }: { games: GameDTO[] }) {
               <span className="rounded-md border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-300">{game.category.name}</span>
               {game.supportsMobile && <span className="rounded-md border border-emerald-300/15 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">Mobile ready</span>}
             </div>
-            <h1 className="max-w-xl text-4xl font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">{game.title}</h1>
+            <h1 className="max-w-xl text-3xl font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-4xl">Free HTML5 browser games</h1>
+            <h2 className="mt-3 max-w-xl text-4xl font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">{game.title}</h2>
             <p className="mt-4 max-w-md text-sm font-medium leading-6 text-zinc-300 sm:text-base">{game.tagline}</p>
             <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-zinc-400">
               <span className="flex items-center gap-1.5 text-amber-300"><Star size={14} fill="currentColor" />{positive}% positive</span>
