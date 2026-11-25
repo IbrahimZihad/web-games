@@ -4,7 +4,8 @@ import { resolve, sep } from "node:path";
 import bcrypt from "bcryptjs";
 import { GraphQLError } from "graphql";
 import type { NextRequest } from "next/server";
-import { AuthError, clearSession, requireAdmin, requireUser, setSession } from "@/lib/auth";
+import { revalidateTag } from "next/cache";
+import { clearSession, setSession } from "@/lib/auth";
 import {
   getAdminGames,
   getAdminStats,
@@ -32,28 +33,25 @@ function fail(message: string, code = "BAD_USER_INPUT"): never {
   throw new GraphQLError(message, { extensions: { code } });
 }
 
-async function authUser() {
-  try {
-    return await requireUser();
-  } catch (error) {
-    if (error instanceof AuthError) {
-      throw new GraphQLError(error.message, { extensions: { code: "UNAUTHENTICATED" } });
-    }
-    throw error;
+function authUser(context: GraphQLContext): SessionUser {
+  if (!context.user) {
+    throw new GraphQLError("Please sign in to continue.", { extensions: { code: "UNAUTHENTICATED" } });
   }
+  return context.user;
 }
 
-async function authAdmin() {
-  try {
-    return await requireAdmin();
-  } catch (error) {
-    if (error instanceof AuthError) {
-      throw new GraphQLError(error.message, {
-        extensions: { code: error.status === 403 ? "FORBIDDEN" : "UNAUTHENTICATED" },
-      });
-    }
-    throw error;
+function authAdmin(context: GraphQLContext): SessionUser {
+  if (!context.user) {
+    throw new GraphQLError("Please sign in to continue.", { extensions: { code: "UNAUTHENTICATED" } });
   }
+  if (context.user.role !== "ADMIN") {
+    throw new GraphQLError("Administrator access required.", { extensions: { code: "FORBIDDEN" } });
+  }
+  return context.user;
+}
+
+function invalidateCatalog() {
+  revalidateTag("catalog", "max");
 }
 
 function parseId(value: unknown) {
@@ -86,7 +84,7 @@ export const resolvers = {
         categorySlug: args.categorySlug as string | undefined,
         tagSlug: args.tagSlug as string | undefined,
         search: args.search as string | undefined,
-        status: args.status as "DRAFT" | "PUBLISHED" | "ARCHIVED" | undefined,
+        status: "PUBLISHED",
         featured: args.featured as boolean | undefined,
         trending: args.trending as boolean | undefined,
         sort: args.sort as "popular" | "newest" | "updated" | "rating" | "title" | undefined,
@@ -95,21 +93,24 @@ export const resolvers = {
       }),
     gameBySlug: (_parent: unknown, args: { slug: string }) => getGameBySlug(args.slug),
     gamesByIds: (_parent: unknown, args: { ids: unknown[] }) => getGamesByIds([...new Set(args.ids.map(parseId))]),
-    gameById: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin();
+    gameById: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
+      authAdmin(context);
       return getGameById(parseId(args.id));
     },
     categories: () => getCategories(),
     tags: () => getTags(),
-    myFavorites: async () => (await getUserLibrary((await authUser()).id)).favorites,
-    myPlayHistory: async () => (await getUserLibrary((await authUser()).id)).playHistory,
-    myLibrary: async () => getUserLibrary((await authUser()).id),
-    adminStats: async () => {
-      await authAdmin();
+    myFavorites: async (_parent: unknown, _args: unknown, context: GraphQLContext) =>
+      (await getUserLibrary(authUser(context).id)).favorites,
+    myPlayHistory: async (_parent: unknown, _args: unknown, context: GraphQLContext) =>
+      (await getUserLibrary(authUser(context).id)).playHistory,
+    myLibrary: async (_parent: unknown, _args: unknown, context: GraphQLContext) =>
+      getUserLibrary(authUser(context).id),
+    adminStats: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+      authAdmin(context);
       return getAdminStats();
     },
-    adminGames: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin();
+    adminGames: async (_parent: unknown, args: Record<string, unknown>, context: GraphQLContext) => {
+      authAdmin(context);
       return getAdminGames({
         search: args.search as string | undefined,
         status: args.status as "DRAFT" | "PUBLISHED" | "ARCHIVED" | undefined,
@@ -173,8 +174,8 @@ export const resolvers = {
       ]);
       return true;
     },
-    toggleFavorite: async (_parent: unknown, args: { gameId: string }) => {
-      const user = await authUser();
+    toggleFavorite: async (_parent: unknown, args: { gameId: string }, context: GraphQLContext) => {
+      const user = authUser(context);
       const gameId = parseId(args.gameId);
       const game = await prisma.game.findUnique({ where: { id: gameId }, select: { id: true } });
       if (!game) fail("Game not found.", "NOT_FOUND");
@@ -189,8 +190,8 @@ export const resolvers = {
       await prisma.userFavorite.create({ data: { userId: user.id, gameId } });
       return true;
     },
-    voteGame: async (_parent: unknown, args: { gameId: string; vote: "LIKE" | "DISLIKE" }) => {
-      const user = await authUser();
+    voteGame: async (_parent: unknown, args: { gameId: string; vote: "LIKE" | "DISLIKE" }, context: GraphQLContext) => {
+      const user = authUser(context);
       const gameId = parseId(args.gameId);
       const existing = await prisma.gameRating.findUnique({
         where: { userId_gameId: { userId: user.id, gameId } },
@@ -229,7 +230,7 @@ export const resolvers = {
       return getGameById(gameId, false);
     },
     addComment: async (_parent: unknown, args: { gameId: string; body: string }, context: GraphQLContext) => {
-      const user = await authUser();
+      const user = authUser(context);
       enforceRateLimit(context.request, `comment:${user.id}`, 10, 10 * 60 * 1000);
       const gameId = parseId(args.gameId);
       const body = args.body.trim();
@@ -239,12 +240,16 @@ export const resolvers = {
 
       const comment = await prisma.comment.create({
         data: { gameId, userId: user.id, body },
-        include: { user: { select: { id: true, username: true, email: true, avatarUrl: true, role: true } } },
+        include: { user: { select: { id: true, username: true, avatarUrl: true, role: true } } },
       });
       return toComment(comment);
     },
-    syncGuestLibrary: async (_parent: unknown, args: { favoriteGameIds?: unknown[]; playedGameIds?: unknown[] }) => {
-      const user = await authUser();
+    syncGuestLibrary: async (
+      _parent: unknown,
+      args: { favoriteGameIds?: unknown[]; playedGameIds?: unknown[] },
+      context: GraphQLContext,
+    ) => {
+      const user = authUser(context);
       const favoriteIds = [...new Set((args.favoriteGameIds || []).map(parseId))];
       const playedIds = [...new Set((args.playedGameIds || []).map(parseId))].slice(0, 60);
       const games = await prisma.game.findMany({
@@ -264,8 +269,8 @@ export const resolvers = {
       ]);
       return true;
     },
-    createGame: async (_parent: unknown, args: { input: unknown }) => {
-      const user = await authAdmin();
+    createGame: async (_parent: unknown, args: { input: unknown }, context: GraphQLContext) => {
+      const user = authAdmin(context);
       const input = parseInput(gameInputSchema, args.input);
       const { tagIds, ...data } = input;
       const category = await prisma.category.findUnique({ where: { id: input.categoryId }, select: { id: true } });
@@ -291,7 +296,7 @@ export const resolvers = {
       }
     },
     updateGame: async (_parent: unknown, args: { id: string; input: unknown }) => {
-      await authAdmin();
+      await authAdmin(context);
       const id = parseId(args.id);
       const input = parseInput(gameInputSchema, args.input);
       const { tagIds, ...data } = input;
@@ -323,7 +328,7 @@ export const resolvers = {
       }
     },
     deleteGame: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin();
+      await authAdmin(context);
       const id = parseId(args.id);
       const game = await prisma.game.findUnique({ where: { id } });
       if (!game) fail("Game not found.", "NOT_FOUND");
@@ -343,7 +348,7 @@ export const resolvers = {
       return true;
     },
     createCategory: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin();
+      await authAdmin(context);
       const input = parseInput(categorySchema, args);
       try {
         const category = await prisma.category.create({ data: input });
@@ -354,7 +359,7 @@ export const resolvers = {
       }
     },
     updateCategory: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin();
+      await authAdmin(context);
       const id = parseId(args.id);
       const input = parseInput(categorySchema, args);
       try {
@@ -367,7 +372,7 @@ export const resolvers = {
       }
     },
     deleteCategory: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin();
+      await authAdmin(context);
       const id = parseId(args.id);
       const count = await prisma.game.count({ where: { categoryId: id } });
       if (count > 0) fail("Move or delete the games in this category first.", "CONFLICT");
@@ -380,7 +385,7 @@ export const resolvers = {
       return true;
     },
     createTag: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin();
+      await authAdmin(context);
       const input = parseInput(tagSchema, args);
       try {
         const tag = await prisma.tag.create({ data: input });
@@ -391,7 +396,7 @@ export const resolvers = {
       }
     },
     updateTag: async (_parent: unknown, args: Record<string, unknown>) => {
-      await authAdmin();
+      await authAdmin(context);
       const id = parseId(args.id);
       const input = parseInput(tagSchema, args);
       try {
@@ -404,7 +409,7 @@ export const resolvers = {
       }
     },
     deleteTag: async (_parent: unknown, args: { id: string }) => {
-      await authAdmin();
+      await authAdmin(context);
       const id = parseId(args.id);
       try {
         await prisma.tag.delete({ where: { id } });

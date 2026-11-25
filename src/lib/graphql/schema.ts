@@ -13,6 +13,13 @@ export const typeDefs = /* GraphQL */ `
     role: Role!
   }
 
+  type PublicUser {
+    id: ID!
+    username: String!
+    avatarUrl: String
+    role: Role!
+  }
+
   type Category {
     id: ID!
     name: String!
@@ -33,7 +40,7 @@ export const typeDefs = /* GraphQL */ `
     id: ID!
     body: String!
     createdAt: String!
-    user: User!
+    user: PublicUser!
   }
 
   type Game {
@@ -58,7 +65,7 @@ export const typeDefs = /* GraphQL */ `
     status: GameStatus!
     isFeatured: Boolean!
     isTrending: Boolean!
-    playCount: Int!
+    playCount: Float!
     likesCount: Int!
     dislikesCount: Int!
     publishedAt: String
@@ -94,7 +101,7 @@ export const typeDefs = /* GraphQL */ `
     totalGames: Int!
     publishedGames: Int!
     draftGames: Int!
-    totalPlays: Int!
+    totalPlays: Float!
     totalUsers: Int!
     topGames: [Game!]!
   }

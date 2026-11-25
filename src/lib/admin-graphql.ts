@@ -58,17 +58,11 @@ const categoryFields = "id name slug iconName description displayOrder gameCount
 const categoryWriteFields = "id name slug iconName description displayOrder";
 const tagFields = "id name slug";
 
-// gameFragment is shared with the portal. These merged selections restore the
-// category fields used by admin screens without changing the public fragment.
 const adminGameSelection = gameFragment
   .replace("fragment GameFields", "fragment AdminGameFields")
   .replace(
     "category { id name slug iconName gameCount }",
     "category { id name slug iconName gameCount description displayOrder }",
-  )
-  .replace(
-    "user { id username avatarUrl role }",
-    "user { id username avatarUrl role email }",
   );
 
 const meQuery = `

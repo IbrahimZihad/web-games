@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type {
   AdminStats,
@@ -8,39 +9,35 @@ import type {
   GameFilters,
   GameStatus,
   HomeFeed,
-  SessionUser,
+  PublicUser,
   TagDTO,
 } from "@/lib/types";
 
-const gameInclude = {
-  category: {
-    include: {
-      _count: { select: { games: { where: { status: "PUBLISHED" as const } } } },
-    },
-  },
+const gameCardInclude = {
+  category: true,
   tags: { include: { tag: true }, orderBy: { tag: { name: "asc" } } },
+} satisfies Prisma.GameInclude;
+
+const gameDetailInclude = {
+  ...gameCardInclude,
   comments: {
     where: { isHidden: false },
     orderBy: { createdAt: "desc" },
+    take: 50,
     include: {
-      user: { select: { id: true, username: true, email: true, avatarUrl: true, role: true } },
+      user: { select: { id: true, username: true, avatarUrl: true, role: true } },
     },
   },
 } satisfies Prisma.GameInclude;
 
-type GameRecord = Prisma.GameGetPayload<{ include: typeof gameInclude }>;
+type GameCardRecord = Prisma.GameGetPayload<{ include: typeof gameCardInclude }>;
+type GameDetailRecord = Prisma.GameGetPayload<{ include: typeof gameDetailInclude }>;
+type CategoryCounts = ReadonlyMap<number, number>;
 
-function toUser(user: GameRecord["comments"][number]["user"]): SessionUser {
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    avatarUrl: user.avatarUrl,
-    role: user.role,
-  };
-}
+const catalogCache = { tags: ["catalog"], revalidate: 30 };
+const MAX_LIBRARY_GAMES = 200;
 
-function toCategory(category: GameRecord["category"]): CategoryDTO {
+function toCategory(category: GameCardRecord["category"], gameCount: number): CategoryDTO {
   return {
     id: category.id,
     name: category.name,
@@ -48,11 +45,16 @@ function toCategory(category: GameRecord["category"]): CategoryDTO {
     iconName: category.iconName,
     description: category.description,
     displayOrder: category.displayOrder,
-    gameCount: category._count.games,
+    gameCount,
   };
 }
 
-function toGame(game: GameRecord, similarGames: GameDTO[] = []): GameDTO {
+function toGame(
+  game: GameCardRecord & { comments?: GameDetailRecord["comments"] },
+  similarGames: GameDTO[] = [],
+  categoryCounts?: CategoryCounts,
+  now = Date.now(),
+): GameDTO {
   return {
     id: game.id,
     title: game.title,
@@ -61,7 +63,7 @@ function toGame(game: GameRecord, similarGames: GameDTO[] = []): GameDTO {
     description: game.description,
     controlsGuide: game.controlsGuide,
     developerName: game.developerName,
-    category: toCategory(game.category),
+    category: toCategory(game.category, categoryCounts?.get(game.categoryId) ?? 0),
     tags: game.tags.map(({ tag }) => ({ id: tag.id, name: tag.name, slug: tag.slug })),
     sourceType: game.sourceType,
     embedUrl: game.embedUrl,
@@ -75,45 +77,74 @@ function toGame(game: GameRecord, similarGames: GameDTO[] = []): GameDTO {
     status: game.status,
     isFeatured: game.isFeatured,
     isTrending: game.isTrending,
-    isNew: Boolean(game.publishedAt && Date.now() - game.publishedAt.getTime() < 1000 * 60 * 60 * 24 * 21),
+    isNew: Boolean(game.publishedAt && now - game.publishedAt.getTime() < 1000 * 60 * 60 * 24 * 21),
     playCount: Number(game.playCount),
     likesCount: game.likesCount,
     dislikesCount: game.dislikesCount,
     publishedAt: game.publishedAt?.toISOString() || null,
     createdAt: game.createdAt.toISOString(),
     updatedAt: game.updatedAt.toISOString(),
-    comments: game.comments.map((comment) => ({
+    comments: (game.comments ?? []).map((comment) => ({
       id: comment.id,
       body: comment.body,
       createdAt: comment.createdAt.toISOString(),
-      user: toUser(comment.user),
+      user: comment.user,
     })),
     similarGames,
   };
 }
 
-export async function getCategories(): Promise<CategoryDTO[]> {
-  const categories = await prisma.category.findMany({
-    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-    include: { _count: { select: { games: { where: { status: "PUBLISHED" } } } } },
-  });
-
-  return categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    iconName: category.iconName,
-    description: category.description,
-    displayOrder: category.displayOrder,
-    gameCount: category._count.games,
-  }));
+function mapGameCards(games: GameCardRecord[], categoryCounts: CategoryCounts, now = Date.now()): GameDTO[] {
+  return games.map((game) => toGame(game, [], categoryCounts, now));
 }
 
-export async function getTags(): Promise<TagDTO[]> {
+async function getCategoryCounts(): Promise<CategoryCounts> {
+  const counts = await prisma.game.groupBy({
+    by: ["categoryId"],
+    where: { status: "PUBLISHED" },
+    _count: { _all: true },
+  });
+  return new Map(counts.map((item) => [item.categoryId, item._count._all]));
+}
+
+function boundedInteger(value: number | undefined, fallback: number, min: number, max: number): number {
+  return value !== undefined && Number.isFinite(value)
+    ? Math.min(max, Math.max(min, Math.trunc(value)))
+    : fallback;
+}
+
+function normalizeGameFilters(filters: GameFilters): GameFilters {
+  return {
+    categorySlug: filters.categorySlug?.trim().slice(0, 120) || undefined,
+    tagSlug: filters.tagSlug?.trim().slice(0, 100) || undefined,
+    search: filters.search?.trim().slice(0, 120) || undefined,
+    status: filters.status,
+    limit: boundedInteger(filters.limit, 24, 1, 60),
+    offset: boundedInteger(filters.offset, 0, 0, 100_000),
+    featured: filters.featured,
+    trending: filters.trending,
+    sort: filters.sort || "popular",
+  };
+}
+
+async function getCategoriesUncached(): Promise<CategoryDTO[]> {
+  const [categories, counts] = await Promise.all([
+    prisma.category.findMany({ orderBy: [{ displayOrder: "asc" }, { name: "asc" }] }),
+    getCategoryCounts(),
+  ]);
+
+  return categories.map((category) => toCategory(category, counts.get(category.id) ?? 0));
+}
+
+export const getCategories = unstable_cache(getCategoriesUncached, ["categories"], catalogCache);
+
+async function getTagsUncached(): Promise<TagDTO[]> {
   return prisma.tag.findMany({ orderBy: { name: "asc" } });
 }
 
-export async function getGames(filters: GameFilters = {}): Promise<GameDTO[]> {
+export const getTags = unstable_cache(getTagsUncached, ["tags"], catalogCache);
+
+async function findGameCards(filters: GameFilters): Promise<GameCardRecord[]> {
   const where: Prisma.GameWhereInput = {
     status: filters.status || "PUBLISHED",
     ...(filters.categorySlug ? { category: { slug: filters.categorySlug } } : {}),
@@ -139,84 +170,143 @@ export async function getGames(filters: GameFilters = {}): Promise<GameDTO[]> {
       : filters.sort === "updated"
         ? [{ updatedAt: "desc" }]
         : filters.sort === "rating"
-        ? [{ likesCount: "desc" }, { playCount: "desc" }]
-        : filters.sort === "title"
-          ? [{ title: "asc" }]
-          : [{ playCount: "desc" }, { publishedAt: "desc" }];
+          ? [{ likesCount: "desc" }, { playCount: "desc" }]
+          : filters.sort === "title"
+            ? [{ title: "asc" }]
+            : [{ playCount: "desc" }, { publishedAt: "desc" }];
 
-  const games = await prisma.game.findMany({
+  return prisma.game.findMany({
     where,
-    include: gameInclude,
+    include: gameCardInclude,
     orderBy,
-    take: Math.min(Math.max(filters.limit || 24, 1), 60),
-    skip: Math.max(filters.offset || 0, 0),
+    take: filters.limit,
+    skip: filters.offset,
   });
-
-  return games.map((game) => toGame(game));
 }
 
-export async function getGameBySlug(slug: string, includeUnpublished = false): Promise<GameDTO | null> {
-  const game = await prisma.game.findUnique({
-    where: { slug },
-    include: gameInclude,
-  });
+async function getGamesUncached(filters: GameFilters): Promise<GameDTO[]> {
+  const [games, counts] = await Promise.all([findGameCards(filters), getCategoryCounts()]);
+  return mapGameCards(games, counts);
+}
 
+const getPublishedGamesCached = unstable_cache(getGamesUncached, ["games"], catalogCache);
+
+export async function getGames(filters: GameFilters = {}): Promise<GameDTO[]> {
+  const normalized = normalizeGameFilters(filters);
+  if (normalized.status && normalized.status !== "PUBLISHED") {
+    return getGamesUncached(normalized);
+  }
+  return getPublishedGamesCached(normalized);
+}
+
+async function getGameBySlugUncached(slug: string, includeUnpublished: boolean): Promise<GameDTO | null> {
+  const game = await prisma.game.findUnique({ where: { slug }, include: gameDetailInclude });
   if (!game || (!includeUnpublished && game.status !== "PUBLISHED")) return null;
 
-  const similar = await prisma.game.findMany({
-    where: {
-      status: "PUBLISHED",
-      categoryId: game.categoryId,
-      id: { not: game.id },
-    },
-    include: gameInclude,
-    orderBy: [{ playCount: "desc" }],
-    take: 4,
-  });
-
-  return toGame(game, similar.map((item) => toGame(item)));
+  const [similar, counts] = await Promise.all([
+    prisma.game.findMany({
+      where: {
+        status: "PUBLISHED",
+        categoryId: game.categoryId,
+        id: { not: game.id },
+      },
+      include: gameCardInclude,
+      orderBy: [{ playCount: "desc" }, { publishedAt: "desc" }],
+      take: 4,
+    }),
+    getCategoryCounts(),
+  ]);
+  const now = Date.now();
+  return toGame(game, mapGameCards(similar, counts, now), counts, now);
 }
 
-export async function getHomeFeed(): Promise<HomeFeed> {
-  const [featured, trending, newReleases, categories] = await Promise.all([
-    getGames({ featured: true, sort: "popular", limit: 4 }),
-    getGames({ trending: true, sort: "popular", limit: 12 }),
-    getGames({ sort: "newest", limit: 12 }),
-    getCategories(),
+const getPublishedGameBySlugCached = unstable_cache(
+  (slug: string) => getGameBySlugUncached(slug, false),
+  ["game-by-slug"],
+  catalogCache,
+);
+
+export async function getGameBySlug(slug: string, includeUnpublished = false): Promise<GameDTO | null> {
+  const normalized = slug.trim().slice(0, 220);
+  if (!normalized) return null;
+  return includeUnpublished
+    ? getGameBySlugUncached(normalized, true)
+    : getPublishedGameBySlugCached(normalized);
+}
+
+async function getHomeFeedUncached(): Promise<HomeFeed> {
+  const [featuredRecords, trendingRecords, newRecords, categories, counts, ranked] = await Promise.all([
+    findGameCards(normalizeGameFilters({ featured: true, sort: "popular", limit: 4 })),
+    findGameCards(normalizeGameFilters({ trending: true, sort: "popular", limit: 12 })),
+    findGameCards(normalizeGameFilters({ sort: "newest", limit: 12 })),
+    prisma.category.findMany({ orderBy: [{ displayOrder: "asc" }, { name: "asc" }] }),
+    getCategoryCounts(),
+    prisma.$queryRaw<Array<{ id: number; categoryId: number; rowNumber: bigint }>>`
+      SELECT id, categoryId, rowNumber FROM (
+        SELECT g.id, g.categoryId,
+          ROW_NUMBER() OVER (
+            PARTITION BY g.categoryId
+            ORDER BY g.playCount DESC, g.publishedAt DESC, g.id DESC
+          ) AS rowNumber
+        FROM Game AS g
+        WHERE g.status = 'PUBLISHED'
+      ) AS rankedGames
+      WHERE rowNumber <= 12
+      ORDER BY categoryId, rowNumber
+    `,
   ]);
 
-  const categoryRows = await Promise.all(
-    categories.map(async (category) => ({
-      category,
-      games: (await getGames({ categorySlug: category.slug, sort: "popular", limit: 12 })).filter(
-        (game) => game.category.slug === category.slug,
-      ),
-    })),
-  );
+  const rankedIds = ranked.map((row) => row.id);
+  const rankedGames = rankedIds.length
+    ? await prisma.game.findMany({ where: { id: { in: rankedIds } }, include: gameCardInclude })
+    : [];
+  const gamesById = new Map(rankedGames.map((game) => [game.id, toGame(game, [], counts)]));
+  const now = Date.now();
+  const featured = mapGameCards(featuredRecords, counts, now);
+  const trending = mapGameCards(trendingRecords, counts, now);
+
+  const categoryRows = categories.flatMap((category) => {
+    const games = ranked
+      .filter((row) => row.categoryId === category.id)
+      .sort((a, b) => Number(a.rowNumber - b.rowNumber))
+      .map((row) => gamesById.get(row.id))
+      .filter((game): game is GameDTO => Boolean(game));
+    return games.length ? [{ category: toCategory(category, counts.get(category.id) ?? 0), games }] : [];
+  });
 
   return {
     featured: featured.length ? featured : trending.slice(0, 3),
     trending,
-    newReleases,
-    categoryRows: categoryRows.filter((row) => row.games.length > 0),
+    newReleases: mapGameCards(newRecords, counts, now),
+    categoryRows,
   };
 }
 
-export async function getGamesByIds(ids: number[]): Promise<GameDTO[]> {
+export const getHomeFeed = unstable_cache(getHomeFeedUncached, ["home-feed"], catalogCache);
+
+async function getGamesByIdsUncached(ids: number[]): Promise<GameDTO[]> {
   if (!ids.length) return [];
-  const games = await prisma.game.findMany({
-    where: { id: { in: ids }, status: "PUBLISHED" },
-    include: gameInclude,
-  });
-  const byId = new Map(games.map((game) => [game.id, toGame(game)]));
+  const [games, counts] = await Promise.all([
+    prisma.game.findMany({ where: { id: { in: ids }, status: "PUBLISHED" }, include: gameCardInclude }),
+    getCategoryCounts(),
+  ]);
+  const byId = new Map(games.map((game) => [game.id, toGame(game, [], counts)]));
   return ids.map((id) => byId.get(id)).filter((game): game is GameDTO => Boolean(game));
+}
+
+const getPublishedGamesByIdsCached = unstable_cache(getGamesByIdsUncached, ["games-by-ids"], catalogCache);
+
+export async function getGamesByIds(ids: number[]): Promise<GameDTO[]> {
+  const normalized = [...new Set(ids.filter((id) => Number.isSafeInteger(id) && id > 0))].slice(0, MAX_LIBRARY_GAMES);
+  return normalized.length ? getPublishedGamesByIdsCached(normalized) : [];
 }
 
 export async function getUserLibrary(userId: number) {
   const [favorites, history] = await Promise.all([
     prisma.userFavorite.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" }],
+      take: MAX_LIBRARY_GAMES,
       select: { gameId: true },
     }),
     prisma.playHistory.findMany({
@@ -233,30 +323,27 @@ export async function getUserLibrary(userId: number) {
     getGamesByIds(favoriteIds),
     getGamesByIds(recentIds),
   ]);
+  const latestPlayedAt = new Map(history.map((item) => [item.gameId, item.playedAt.toISOString()]));
 
   return {
     favorites: favoriteGames,
     playHistory: recentGames.map((game) => ({
       game,
-      playedAt: history.find((item) => item.gameId === game.id)?.playedAt.toISOString() || null,
+      playedAt: latestPlayedAt.get(game.id) || null,
     })),
   };
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  const [totalGames, publishedGames, draftGames, playAggregate, totalUsers] = await Promise.all([
+  const [totalGames, publishedGames, draftGames, playAggregate, totalUsers, topRecords, counts] = await Promise.all([
     prisma.game.count(),
     prisma.game.count({ where: { status: "PUBLISHED" } }),
     prisma.game.count({ where: { status: "DRAFT" } }),
     prisma.game.aggregate({ _sum: { playCount: true } }),
     prisma.user.count(),
+    prisma.game.findMany({ include: gameCardInclude, orderBy: [{ playCount: "desc" }], take: 10 }),
+    getCategoryCounts(),
   ]);
-
-  const allStatusGames = await prisma.game.findMany({
-    include: gameInclude,
-    orderBy: [{ playCount: "desc" }],
-    take: 10,
-  });
 
   return {
     totalGames,
@@ -264,7 +351,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     draftGames,
     totalPlays: Number(playAggregate._sum.playCount || 0n),
     totalUsers,
-    topGames: allStatusGames.map((game) => toGame(game)),
+    topGames: mapGameCards(topRecords, counts),
   };
 }
 
@@ -282,28 +369,33 @@ export async function getAdminGames(filters: GameFilters = {}): Promise<GameDTO[
       : {}),
   };
 
-  const games = await prisma.game.findMany({
-    where,
-    include: gameInclude,
-    orderBy: [{ updatedAt: "desc" }],
-    take: Math.min(Math.max(filters.limit || 100, 1), 200),
-    skip: Math.max(filters.offset || 0, 0),
-  });
-
-  return games.map((game) => toGame(game));
+  const [games, counts] = await Promise.all([
+    prisma.game.findMany({
+      where,
+      include: gameCardInclude,
+      orderBy: [{ updatedAt: "desc" }],
+      take: boundedInteger(filters.limit, 100, 1, 200),
+      skip: boundedInteger(filters.offset, 0, 0, 100_000),
+    }),
+    getCategoryCounts(),
+  ]);
+  return mapGameCards(games, counts);
 }
 
 export async function getGameById(id: number, includeUnpublished = true): Promise<GameDTO | null> {
-  const game = await prisma.game.findUnique({ where: { id }, include: gameInclude });
+  const [game, counts] = await Promise.all([
+    prisma.game.findUnique({ where: { id }, include: gameCardInclude }),
+    getCategoryCounts(),
+  ]);
   if (!game || (!includeUnpublished && game.status !== "PUBLISHED")) return null;
-  return toGame(game);
+  return toGame(game, [], counts);
 }
 
 export function toComment(comment: {
   id: number;
   body: string;
   createdAt: Date;
-  user: SessionUser;
+  user: PublicUser;
 }): CommentDTO {
   return { id: comment.id, body: comment.body, createdAt: comment.createdAt.toISOString(), user: comment.user };
 }

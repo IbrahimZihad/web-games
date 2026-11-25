@@ -53,7 +53,7 @@ export function ContinuePlaying() {
     if (!ids) return;
     let active = true;
     graphqlRequest<{ gamesByIds: GameDTO[] }>(
-      `query ContinueGames($ids: [ID!]!) { gamesByIds(ids: $ids) { id title slug thumbnailUrl previewVideoUrl posterUrl tagline description controlsGuide developerName category { id name slug iconName gameCount } tags { id name slug } sourceType embedUrl aspectRatio orientation supportsMobile screenshots status isFeatured isTrending playCount likesCount dislikesCount publishedAt createdAt updatedAt comments { id body createdAt user { id username email avatarUrl role } } similarGames { id } } }`,
+      `query ContinueGames($ids: [ID!]!) { gamesByIds(ids: $ids) { id title slug thumbnailUrl previewVideoUrl posterUrl tagline description controlsGuide developerName category { id name slug iconName gameCount } tags { id name slug } sourceType embedUrl aspectRatio orientation supportsMobile screenshots status isFeatured isTrending playCount likesCount dislikesCount publishedAt createdAt updatedAt comments { id body createdAt user { id username avatarUrl role } } similarGames { id } } }`,
       { ids: ids.split(",") },
     ).then((data) => { if (active) setGames(data.gamesByIds); }).catch(() => { if (active) setGames([]); });
     return () => { active = false; };

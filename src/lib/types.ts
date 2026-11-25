@@ -13,6 +13,13 @@ export interface SessionUser {
   role: Role;
 }
 
+export interface PublicUser {
+  id: number;
+  username: string;
+  avatarUrl: string | null;
+  role: Role;
+}
+
 export interface CategoryDTO {
   id: number;
   name: string;
@@ -33,7 +40,7 @@ export interface CommentDTO {
   id: number;
   body: string;
   createdAt: string;
-  user: SessionUser;
+  user: PublicUser;
 }
 
 export interface GameDTO {

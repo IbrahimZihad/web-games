@@ -175,8 +175,9 @@ async function main() {
   }
 
   for (const game of games) {
-    const { categorySlug, tagSlugs, ...gameData } = game;
+    const { categorySlug, tagSlugs, playCount, likesCount, dislikesCount, ...gameData } = game;
     const data = { ...gameData, status: "PUBLISHED" as const };
+    const initialCounters = { playCount, likesCount, dislikesCount };
     const category = await prisma.category.findUniqueOrThrow({ where: { slug: categorySlug } });
     const tagRecords = await Promise.all(
       tagSlugs.map((slug) => prisma.tag.findUniqueOrThrow({ where: { slug } })),
@@ -194,6 +195,7 @@ async function main() {
       },
       create: {
         ...data,
+        ...initialCounters,
         categoryId: category.id,
         createdById: admin.id,
         screenshots: [game.thumbnailUrl],

@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:setup": "node scripts/setup-local-db.mjs"
+    "db:setup": "node scripts/setup-local-db.mjs",
+    "worker:play-counts": "tsx scripts/play-count-worker.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
@@ -19,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "graphql": "^16.11.0",
     "graphql-yoga": "5.24.6",
+    "ioredis": "^6.1.0",
     "jose": "^6.2.18",
     "lucide-react": "^1.79.0",
     "next": "16.4.6",

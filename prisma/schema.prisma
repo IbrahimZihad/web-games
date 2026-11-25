@@ -112,6 +112,7 @@ model Game {
   @@index([status, publishedAt])
   @@index([categoryId])
   @@index([playCount])
+  @@index([status, categoryId, playCount, publishedAt])
 }
 
 model Tag {
@@ -149,11 +150,13 @@ model PlayHistory {
   sessionFingerprint String? @db.VarChar(128)
   gameId            Int      @db.UnsignedInt
   playedAt          DateTime @default(now()) @db.Timestamp(0)
+  countedAt         DateTime? @db.Timestamp(0)
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   game Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@index([userId, playedAt])
+  @@index([countedAt, id])
 }
 
 model GameRating {
