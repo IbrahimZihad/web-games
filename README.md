@@ -116,6 +116,14 @@ The ZIP must contain `index.html` at its root. Extraction rejects traversal path
 
 Uploaded files are stored under `public/uploads`. Multi-instance or serverless deployments need shared persistent storage and a cross-process publishing lock; the current local implementation serializes publishes per slug within one Node process.
 
+## SEO
+
+- Public pages generate dynamic titles, descriptions, keywords, canonical URLs, Open Graph cards, and Twitter cards from the catalog.
+- Game, category, tag, collection, and breadcrumb structured data is emitted as JSON-LD.
+- `/sitemap.xml` includes published games and non-empty categories/tags; `/robots.txt` exposes the sitemap and blocks private or utility routes.
+- Search, sign-in, personalized library, admin, API, and raw uploaded-game URLs are excluded from indexing.
+- Set `NEXT_PUBLIC_APP_URL` to the final public HTTPS origin before deployment. Canonicals, sitemap URLs, structured data, and social images use this value.
+
 ## Production notes
 
 - Serve the app over HTTPS so secure session cookies are enabled.
