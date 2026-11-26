@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -23,12 +23,27 @@ const ratioClasses: Record<GameDTO["aspectRatio"], string> = {
   RESPONSIVE: "h-[min(72vh,760px)]",
 };
 
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+
+type FullscreenViewport = HTMLDivElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+function currentFullscreenElement() {
+  const fullscreenDocument = document as FullscreenDocument;
+  return document.fullscreenElement ?? fullscreenDocument.webkitFullscreenElement ?? null;
+}
+
 export function GameExperience({ game }: { game: GameDTO }) {
   const { user, isFavorite, toggleFavorite, recordHistory, openAuth, notify } = useApp();
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [theater, setTheater] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenFallback, setFullscreenFallback] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
   const [playCount, setPlayCount] = useState(game.playCount);
   const [votes, setVotes] = useState({ likes: game.likesCount, dislikes: game.dislikesCount });
@@ -37,15 +52,42 @@ export function GameExperience({ game }: { game: GameDTO }) {
   const [commentBody, setCommentBody] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [score, setScore] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const saved = isFavorite(game.id);
+  const immersive = fullscreen || fullscreenFallback;
+
+  const sendFullscreenState = useCallback((active: boolean) => {
+    iframeRef.current?.contentWindow?.postMessage({ type: "NEXUS_FULLSCREEN", active }, "*");
+  }, []);
 
   useEffect(() => {
-    const onFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    const onFullscreen = () => setFullscreen(Boolean(currentFullscreenElement()));
     document.addEventListener("fullscreenchange", onFullscreen);
-    return () => document.removeEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("webkitfullscreenchange", onFullscreen);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreen);
+      document.removeEventListener("webkitfullscreenchange", onFullscreen);
+    };
   }, []);
+
+  useEffect(() => {
+    sendFullscreenState(immersive);
+  }, [immersive, frameKey, sendFullscreenState]);
+
+  useEffect(() => {
+    if (!fullscreenFallback) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreenFallback(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fullscreenFallback]);
 
   useEffect(() => {
     if (!theater) return;
@@ -100,12 +142,39 @@ export function GameExperience({ game }: { game: GameDTO }) {
   }
 
   async function toggleFullscreen() {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await containerRef.current?.requestFullscreen();
-    } catch {
-      notify("Fullscreen is not available in this browser.", "error");
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    if (fullscreenFallback) {
+      setFullscreenFallback(false);
+      return;
     }
+
+    if (currentFullscreenElement()) {
+      const fullscreenDocument = document as FullscreenDocument;
+      try {
+        if (fullscreenDocument.exitFullscreen) await fullscreenDocument.exitFullscreen();
+        else await fullscreenDocument.webkitExitFullscreen?.();
+      } catch {
+        notify("Fullscreen could not be closed. Press Escape to exit.", "error");
+      }
+      return;
+    }
+
+    setTheater(false);
+    const fullscreenViewport = viewport as FullscreenViewport;
+    const requestFullscreen = fullscreenViewport.requestFullscreen ?? fullscreenViewport.webkitRequestFullscreen;
+    if (requestFullscreen) {
+      try {
+        await requestFullscreen.call(viewport);
+        return;
+      } catch {
+        setFullscreenFallback(true);
+        return;
+      }
+    }
+
+    setFullscreenFallback(true);
   }
 
   async function share() {
@@ -148,9 +217,17 @@ export function GameExperience({ game }: { game: GameDTO }) {
         <span className="truncate text-zinc-400">{game.title}</span>
       </nav>
 
-      <div ref={containerRef} className={cn("game-player-container", theater && "fixed inset-0 z-[80] flex flex-col bg-black p-0 sm:p-4", fullscreen && "flex h-screen flex-col bg-black p-0")}>
+      <div className={cn("game-player-container", theater && "fixed inset-0 z-[80] flex flex-col bg-black p-0 sm:p-4")}>
         {theater && <div className="mb-3 flex items-center justify-between px-1 text-sm text-zinc-400"><span className="font-semibold text-white">{game.title}</span><button onClick={() => setTheater(false)} className="icon-button" aria-label="Exit theater mode"><X size={18} /></button></div>}
-        <div className={cn("relative mx-auto w-full overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl shadow-black/40 sm:rounded-2xl", theater || fullscreen ? "max-w-none flex-1" : ratioClasses[game.aspectRatio])}>
+        <div
+          ref={viewportRef}
+          data-fullscreen={immersive ? "true" : "false"}
+          className={cn(
+            "game-viewport relative mx-auto w-full overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl shadow-black/40 sm:rounded-2xl",
+            theater ? "max-w-none flex-1" : ratioClasses[game.aspectRatio],
+            fullscreenFallback && "nexus-fullscreen-fallback",
+          )}
+        >
           {!playing ? (
             <>
               <Image src={game.thumbnailUrl} alt={`${game.title} game cover`} fill priority sizes="(max-width: 768px) 100vw, 80vw" className="object-cover" />
@@ -174,15 +251,19 @@ export function GameExperience({ game }: { game: GameDTO }) {
                 className="h-full w-full border-0 bg-black"
                 sandbox="allow-scripts allow-pointer-lock allow-forms"
                 allow="autoplay; fullscreen; gamepad"
-                onLoad={() => setLoading(false)}
+                onLoad={() => {
+                  setLoading(false);
+                  sendFullscreenState(immersive);
+                }}
               />
               {loading && <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-[#0b0c12] text-zinc-400"><LoaderCircle size={30} className="animate-spin text-violet-400" /><p className="mt-4 text-sm font-semibold">Loading {game.title}…</p><p className="mt-1 text-xs text-zinc-600">Preparing your game</p></div>}
               {score !== null && <div className="pointer-events-none absolute right-3 top-3 rounded-lg border border-white/15 bg-black/65 px-3 py-2 text-xs font-bold text-white backdrop-blur-md"><span className="mr-2 text-zinc-500">SCORE</span>{score.toLocaleString()}</div>}
+              {immersive && <button type="button" onClick={toggleFullscreen} className="game-fullscreen-exit absolute z-20 grid size-11 place-items-center rounded-xl border border-white/20 bg-black/65 text-white shadow-lg backdrop-blur-md transition hover:bg-black/85" aria-label="Exit fullscreen" title="Exit fullscreen"><X size={21} /></button>}
             </>
           )}
         </div>
 
-        <div className={cn("mx-auto mt-0 w-full overflow-hidden rounded-b-xl border border-t-0 border-white/[0.08] bg-[#151620] sm:rounded-b-2xl", (theater || fullscreen) && "mt-3 rounded-xl border")}>
+        <div className={cn("mx-auto mt-0 w-full overflow-hidden rounded-b-xl border border-t-0 border-white/[0.08] bg-[#151620] sm:rounded-b-2xl", theater && "mt-3 rounded-xl border")}>
           <div className="flex min-h-16 flex-wrap items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
             <div className="mr-auto flex min-w-0 items-center gap-3">
               <span className="hidden size-9 shrink-0 place-items-center rounded-lg bg-violet-500/15 text-violet-300 sm:grid"><Gamepad2 size={18} /></span>
@@ -196,7 +277,7 @@ export function GameExperience({ game }: { game: GameDTO }) {
             <button onClick={save} className={cn("icon-button", saved && "border-violet-400/25 bg-violet-500/15 text-violet-300")} aria-label={saved ? "Remove from favorites" : "Add to favorites"} title={saved ? "Remove from favorites" : "Add to favorites"}>{saved ? <Check size={17} /> : <Bookmark size={17} />}</button>
             {playing && <button onClick={() => { setFrameKey((key) => key + 1); setLoading(true); setScore(null); }} className="icon-button hidden sm:inline-flex" aria-label="Restart game" title="Restart game"><RotateCcw size={16} /></button>}
             <button onClick={() => setTheater((value) => !value)} className={cn("icon-button hidden sm:inline-flex", theater && "border-violet-400/25 bg-violet-500/15 text-violet-300")} aria-label={theater ? "Exit theater mode" : "Theater mode"} title={theater ? "Exit theater mode" : "Theater mode"}>{theater ? <Minimize size={16} /> : <Expand size={16} />}</button>
-            <button onClick={toggleFullscreen} className="icon-button" aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"} title={fullscreen ? "Exit fullscreen" : "Fullscreen"}>{fullscreen ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+            <button onClick={toggleFullscreen} className="icon-button" aria-label={immersive ? "Exit fullscreen" : "Enter fullscreen"} title={immersive ? "Exit fullscreen" : "Fullscreen"}>{immersive ? <Minimize size={17} /> : <Maximize size={17} />}</button>
             <button onClick={share} className="icon-button hidden md:inline-flex" aria-label="Share game" title="Share game"><Share2 size={16} /></button>
           </div>
         </div>
