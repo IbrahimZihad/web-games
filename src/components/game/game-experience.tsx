@@ -218,7 +218,7 @@ export function GameExperience({ game }: { game: GameDTO }) {
       </nav>
 
       <div className={cn("game-player-container", theater && "fixed inset-0 z-[80] flex flex-col bg-black p-0 sm:p-4")}>
-        {theater && <div className="mb-3 flex items-center justify-between px-1 text-sm text-zinc-400"><span className="font-semibold text-white">{game.title}</span><button onClick={() => setTheater(false)} className="icon-button" aria-label="Exit theater mode"><X size={18} /></button></div>}
+        {theater && !playing && <div className="mb-3 flex items-center justify-between px-1 text-sm text-zinc-400"><span className="font-semibold text-white">{game.title}</span><button onClick={() => setTheater(false)} className="icon-button" aria-label="Exit theater mode"><X size={18} /></button></div>}
         <div
           ref={viewportRef}
           data-fullscreen={immersive ? "true" : "false"}
@@ -254,6 +254,7 @@ export function GameExperience({ game }: { game: GameDTO }) {
                 onLoad={() => {
                   setLoading(false);
                   sendFullscreenState(immersive);
+                  iframeRef.current?.contentWindow?.postMessage({ type: "NEXUS_PLAY" }, "*");
                 }}
               />
               {loading && <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-[#0b0c12] text-zinc-400"><LoaderCircle size={30} className="animate-spin text-violet-400" /><p className="mt-4 text-sm font-semibold">Loading {game.title}…</p><p className="mt-1 text-xs text-zinc-600">Preparing your game</p></div>}
@@ -261,25 +262,24 @@ export function GameExperience({ game }: { game: GameDTO }) {
               {immersive && <button type="button" onClick={toggleFullscreen} className="game-fullscreen-exit absolute z-20 grid size-11 place-items-center rounded-xl border border-white/20 bg-black/65 text-white shadow-lg backdrop-blur-md transition hover:bg-black/85" aria-label="Exit fullscreen" title="Exit fullscreen"><X size={21} /></button>}
             </>
           )}
-        </div>
-
-        <div className={cn("mx-auto mt-0 w-full overflow-hidden rounded-b-xl border border-t-0 border-white/[0.08] bg-[#151620] sm:rounded-b-2xl", theater && "mt-3 rounded-xl border")}>
-          <div className="flex min-h-16 flex-wrap items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
-            <div className="mr-auto flex min-w-0 items-center gap-3">
-              <span className="hidden size-9 shrink-0 place-items-center rounded-lg bg-violet-500/15 text-violet-300 sm:grid"><Gamepad2 size={18} /></span>
-              <div className="min-w-0"><p className="truncate text-sm font-bold text-white">{game.title}</p><p className="mt-0.5 text-[11px] text-zinc-600">{formatCompact(playCount)} plays</p></div>
+          {!immersive && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-2 bg-gradient-to-b from-black/75 via-black/25 to-transparent px-3 py-3 sm:px-4" role="toolbar" aria-label="Game controls">
+              <div className="mr-auto hidden min-w-0 items-center gap-3 lg:flex">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-violet-500/15 text-violet-300"><Gamepad2 size={18} /></span>
+                <div className="min-w-0"><p className="truncate text-sm font-bold text-white">{game.title}</p><p className="mt-0.5 text-[11px] text-zinc-400">{formatCompact(playCount)} plays</p></div>
+              </div>
+              <div className="pointer-events-auto hidden items-center rounded-lg border border-white/[0.06] bg-black/35 p-0.5 sm:flex">
+                <button onClick={() => handleVote("LIKE")} aria-label="Like game" className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition", vote === "LIKE" ? "bg-emerald-500/15 text-emerald-300" : "text-zinc-300 hover:bg-white/5 hover:text-emerald-300")}><ThumbsUp size={15} />{formatCompact(votes.likes)}</button>
+                <span className="h-4 w-px bg-white/[0.07]" />
+                <button onClick={() => handleVote("DISLIKE")} aria-label="Dislike game" className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition", vote === "DISLIKE" ? "bg-rose-500/15 text-rose-300" : "text-zinc-300 hover:bg-white/5 hover:text-rose-300")}><ThumbsDown size={15} />{formatCompact(votes.dislikes)}</button>
+              </div>
+              <span className="pointer-events-auto hidden sm:inline-flex"><button onClick={save} className={cn("icon-button bg-black/55 text-white backdrop-blur-md hover:bg-black/80", saved && "border-violet-400/25 bg-violet-500/15 text-violet-300")} aria-label={saved ? "Remove from favorites" : "Add to favorites"} title={saved ? "Remove from favorites" : "Add to favorites"}>{saved ? <Check size={17} /> : <Bookmark size={17} />}</button></span>
+              {playing && <button onClick={() => { setFrameKey((key) => key + 1); setLoading(true); setScore(null); }} className="icon-button pointer-events-auto bg-black/55 text-white backdrop-blur-md hover:bg-black/80" aria-label="Restart game" title="Restart game"><RotateCcw size={16} /></button>}
+              <span className="pointer-events-auto hidden sm:inline-flex"><button onClick={() => setTheater((value) => !value)} className={cn("icon-button bg-black/55 text-white backdrop-blur-md hover:bg-black/80", theater && "border-violet-400/25 bg-violet-500/15 text-violet-300")} aria-label={theater ? "Exit theater mode" : "Theater mode"} title={theater ? "Exit theater mode" : "Theater mode"}>{theater ? <Minimize size={16} /> : <Expand size={16} />}</button></span>
+              <button onClick={toggleFullscreen} className="icon-button pointer-events-auto bg-black/55 text-white backdrop-blur-md hover:bg-black/80" aria-label={immersive ? "Exit fullscreen" : "Enter fullscreen"} title={immersive ? "Exit fullscreen" : "Fullscreen"}>{immersive ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+              <span className="pointer-events-auto hidden md:inline-flex"><button onClick={share} className="icon-button bg-black/55 text-white backdrop-blur-md hover:bg-black/80" aria-label="Share game" title="Share game"><Share2 size={16} /></button></span>
             </div>
-            <div className="flex items-center rounded-lg border border-white/[0.06] bg-black/15 p-0.5">
-              <button onClick={() => handleVote("LIKE")} aria-label="Like game" className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition", vote === "LIKE" ? "bg-emerald-500/15 text-emerald-300" : "text-zinc-500 hover:bg-white/5 hover:text-emerald-300")}><ThumbsUp size={15} />{formatCompact(votes.likes)}</button>
-              <span className="h-4 w-px bg-white/[0.07]" />
-              <button onClick={() => handleVote("DISLIKE")} aria-label="Dislike game" className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition", vote === "DISLIKE" ? "bg-rose-500/15 text-rose-300" : "text-zinc-500 hover:bg-white/5 hover:text-rose-300")}><ThumbsDown size={15} />{formatCompact(votes.dislikes)}</button>
-            </div>
-            <button onClick={save} className={cn("icon-button", saved && "border-violet-400/25 bg-violet-500/15 text-violet-300")} aria-label={saved ? "Remove from favorites" : "Add to favorites"} title={saved ? "Remove from favorites" : "Add to favorites"}>{saved ? <Check size={17} /> : <Bookmark size={17} />}</button>
-            {playing && <button onClick={() => { setFrameKey((key) => key + 1); setLoading(true); setScore(null); }} className="icon-button hidden sm:inline-flex" aria-label="Restart game" title="Restart game"><RotateCcw size={16} /></button>}
-            <button onClick={() => setTheater((value) => !value)} className={cn("icon-button hidden sm:inline-flex", theater && "border-violet-400/25 bg-violet-500/15 text-violet-300")} aria-label={theater ? "Exit theater mode" : "Theater mode"} title={theater ? "Exit theater mode" : "Theater mode"}>{theater ? <Minimize size={16} /> : <Expand size={16} />}</button>
-            <button onClick={toggleFullscreen} className="icon-button" aria-label={immersive ? "Exit fullscreen" : "Enter fullscreen"} title={immersive ? "Exit fullscreen" : "Fullscreen"}>{immersive ? <Minimize size={17} /> : <Maximize size={17} />}</button>
-            <button onClick={share} className="icon-button hidden md:inline-flex" aria-label="Share game" title="Share game"><Share2 size={16} /></button>
-          </div>
+          )}
         </div>
       </div>
 
