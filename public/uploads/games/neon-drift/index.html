@@ -133,7 +133,7 @@ reset();show('STREET RACE PROTOCOL','Neon <em>Drift</em>','Thread four lanes of 
 })();
 </script>
 <script>
-window.addEventListener('message',event=>{if(event.source!==window.parent)return;if(event.data?.type==='NEXUS_FULLSCREEN')document.body.classList.toggle('nexus-fullscreen',Boolean(event.data.active));});
+window.addEventListener('message',event=>{if(event.source!==window.parent)return;if(event.data?.type==='NEXUS_PLAY')document.getElementById('primary')?.click();if(event.data?.type==='NEXUS_FULLSCREEN')document.body.classList.toggle('nexus-fullscreen',Boolean(event.data.active));});
 </script>
 </body>
 </html>
