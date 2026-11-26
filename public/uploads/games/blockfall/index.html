@@ -117,5 +117,8 @@ function loop(now){const dt=Math.min(.04,Math.max(0,(now-last)/1000));last=now;i
 reset();show('MATRIX LINK ESTABLISHED','Block <em>Fall</em>','Build clean lines in a 10 by 18 neon matrix. Rotate seven shapes, clear rows and keep the stack beneath the signal line.','LINK IN');requestAnimationFrame(loop);
 })();
 </script>
+<script>
+window.addEventListener('message',event=>{if(event.source!==window.parent)return;if(event.data?.type==='NEXUS_FULLSCREEN')document.body.classList.toggle('nexus-fullscreen',Boolean(event.data.active));});
+</script>
 </body>
 </html>
