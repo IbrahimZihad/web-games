@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bookmark, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Gamepad2, Home, Menu, Search, Sparkles, X } from "lucide-react";
 import { AuthDialog } from "@/components/auth-dialog";
+import { useCookiePreferences } from "@/components/cookie-preferences";
 import { useApp } from "@/components/providers";
+import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/cookies";
 import { formatCompact } from "@/lib/format";
 import type { CategoryDTO, GameDTO } from "@/lib/types";
 
@@ -134,6 +136,7 @@ function Toasts() {
 export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, authLoading, favoriteIds, setFavoritesOpen, openAuth, logout } = useApp();
+  const { preferencesEnabled, openSettings } = useCookiePreferences();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -145,13 +148,14 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setCollapsed(localStorage.getItem("nexus:sidebar") === "collapsed");
-    });
+    const frame = window.requestAnimationFrame(() => setCollapsed(readSidebarCollapsed()));
+    return () => window.cancelAnimationFrame(frame);
+  }, [preferencesEnabled]);
+
+  useEffect(() => {
     import("@/lib/client-graphql").then(({ graphqlRequest }) =>
       graphqlRequest<{ categories: CategoryDTO[] }>("{ categories { id name slug iconName gameCount } }"),
     ).then((data) => setCategories(data.categories)).catch(() => null);
-    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -196,8 +200,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
   function toggleCollapsed() {
     setCollapsed((current) => {
-      localStorage.setItem("nexus:sidebar", current ? "expanded" : "collapsed");
-      return !current;
+      const next = !current;
+      writeSidebarCollapsed(next);
+      return next;
     });
   }
 
@@ -304,7 +309,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1700px] px-4 pb-20 pt-6 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
-        <footer className="mx-auto flex w-full max-w-[1700px] flex-col gap-3 border-t border-white/[0.05] px-6 py-8 text-xs text-zinc-700 sm:flex-row sm:items-center sm:justify-between lg:px-8"><p>© 2026 Nexus Play. Built for the joy of play.</p><div className="flex gap-5"><Link href="/games" className="hover:text-zinc-400">All games</Link><Link href="/new" className="hover:text-zinc-400">New releases</Link><span>No downloads. Just play.</span></div></footer>
+        <footer className="mx-auto flex w-full max-w-[1700px] flex-col gap-3 border-t border-white/[0.05] px-6 py-8 text-xs text-zinc-700 sm:flex-row sm:items-center sm:justify-between lg:px-8"><p>© 2026 Nexus Play. Built for the joy of play.</p><div className="flex flex-wrap gap-5"><Link href="/games" className="hover:text-zinc-400">All games</Link><Link href="/new" className="hover:text-zinc-400">New releases</Link><span>No downloads. Just play.</span><button type="button" onClick={openSettings} className="hover:text-zinc-400">Cookie settings</button></div></footer>
       </div>
       <FavoritesDrawer />
       <AuthDialog />
