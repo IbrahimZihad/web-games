@@ -105,6 +105,7 @@ let latestSnapshot: SimulationSnapshot | undefined;
 let workerReady = false;
 let rendererReady = false;
 let readyPosted = false;
+let playRequested = false;
 let previousStatus: SimulationSnapshot["status"] = "idle";
 let runBestBaseline = bestScore;
 let lastBestPersist = 0;
@@ -495,7 +496,11 @@ function onMessage(event: MessageEvent) {
   if (event.source !== window.parent) return;
   const data = event.data as { type?: unknown; active?: unknown } | null;
   if (!data || typeof data !== "object") return;
-  if (data.type === "NEXUS_PLAY" && latestSnapshot?.status !== "playing") send({ type: "start" });
+  if (data.type === "NEXUS_PLAY") {
+    if (playRequested) return;
+    playRequested = true;
+    send({ type: "start" });
+  }
   if (data.type === "NEXUS_FULLSCREEN" && typeof data.active === "boolean") {
     appElement.dataset.fullscreen = String(data.active);
     updateLayout();

@@ -112,6 +112,7 @@ function onPortalMessage(event: MessageEvent) {
   const data = event.data as { type?: unknown; active?: unknown } | null;
   if (!data || typeof data !== "object") return;
   if (data.type === "NEXUS_PLAY") {
+    if (playRequested) return;
     playRequested = true;
     launch();
   }

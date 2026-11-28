@@ -41,7 +41,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
         <span className="absolute inset-[1px] rounded-[11px] border border-white/20" />
         <Gamepad2 size={21} className="relative text-white" strokeWidth={2.3} />
       </span>
-      {!compact && <span className="text-lg font-black tracking-[0.14em] text-white">NEXUS<span className="text-violet-400">.</span></span>}
+      <span className={`text-lg font-black tracking-[0.14em] text-white ${compact ? "lg:hidden" : ""}`}>NEXUS<span className="text-violet-400">.</span></span>
     </Link>
   );
 }
@@ -211,10 +211,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       {mobileOpen && <button className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" />}
-      <aside className={`fixed inset-y-0 left-0 z-[60] flex flex-col border-r border-white/[0.06] bg-[#10111b] transition-[width,transform] duration-300 ${collapsed ? "lg:w-[84px]" : "w-[248px] lg:w-[248px]"} ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
-        <div className={`flex h-[76px] items-center border-b border-white/[0.06] ${collapsed ? "justify-center lg:px-2" : "justify-between px-5"}`}>
+      <aside id="portal-sidebar" className={`fixed inset-y-0 left-0 z-[60] flex flex-col border-r border-white/[0.06] bg-[#10111b] transition-[width,transform] duration-300 ${collapsed ? "lg:w-[84px]" : "w-[248px] lg:w-[248px]"} ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+        <div className={`flex h-[76px] items-center border-b border-white/[0.06] ${collapsed ? "justify-between px-5 lg:justify-center lg:px-2" : "justify-between px-5"}`}>
           <Brand compact={collapsed} />
           {!collapsed && <button className="hidden rounded-lg p-1.5 text-zinc-600 hover:bg-white/5 hover:text-white lg:block" onClick={toggleCollapsed} aria-label="Collapse sidebar"><ChevronLeft size={17} /></button>}
+          <button className="rounded-lg p-1.5 text-zinc-500 hover:bg-white/5 hover:text-white lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-5">
           <nav aria-label="Main navigation" className="space-y-1">
@@ -222,37 +223,38 @@ export function PortalShell({ children }: { children: ReactNode }) {
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined} className={`group flex items-center rounded-xl py-3 text-sm font-medium transition ${collapsed ? "lg:justify-center lg:px-2" : "gap-3 px-3.5"} ${active ? "bg-violet-500/12 text-violet-200" : "text-zinc-500 hover:bg-white/[0.035] hover:text-zinc-200"}`}>
+                <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined} className={`group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition ${collapsed ? "lg:justify-center lg:gap-0 lg:px-2" : ""} ${active ? "bg-violet-500/12 text-violet-200" : "text-zinc-500 hover:bg-white/[0.035] hover:text-zinc-200"}`}>
                   <Icon size={18} className={active ? "text-violet-300" : "text-zinc-600 group-hover:text-zinc-300"} />
-                  {!collapsed && <span>{item.label}</span>}
+                  <span className={collapsed ? "lg:hidden" : ""}>{item.label}</span>
                   {!collapsed && active && <span className="ml-auto size-1.5 rounded-full bg-violet-400" />}
                 </Link>
               );
             })}
           </nav>
-          {!collapsed && <p className="mb-3 mt-8 px-3.5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-700">Categories</p>}
+          <p className={`mb-3 mt-8 px-3.5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-700 ${collapsed ? "lg:hidden" : ""}`}>Categories</p>
           <nav aria-label="Game categories" className="space-y-1">
             {categories.map((category) => {
               const active = pathname === `/category/${category.slug}`;
               const Icon = iconMap[category.iconName] || Gamepad2;
               return (
-                <Link key={category.id} href={`/category/${category.slug}`} title={collapsed ? category.name : undefined} className={`group flex items-center rounded-xl py-2.5 text-sm transition ${collapsed ? "lg:justify-center lg:px-2" : "gap-3 px-3.5"} ${active ? "bg-violet-500/12 text-violet-200" : "text-zinc-500 hover:bg-white/[0.035] hover:text-zinc-300"}`}>
+                <Link key={category.id} href={`/category/${category.slug}`} title={collapsed ? category.name : undefined} className={`group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition ${collapsed ? "lg:justify-center lg:gap-0 lg:px-2" : ""} ${active ? "bg-violet-500/12 text-violet-200" : "text-zinc-500 hover:bg-white/[0.035] hover:text-zinc-300"}`}>
                   <Icon size={17} className="text-zinc-600 group-hover:text-violet-300" />
-                  {!collapsed && <><span>{category.name}</span><span className="ml-auto text-[10px] tabular-nums text-zinc-700">{category.gameCount}</span></>}
+                  <span className={`flex min-w-0 flex-1 items-center ${collapsed ? "lg:hidden" : ""}`}><span className="truncate">{category.name}</span><span className="ml-auto text-[10px] tabular-nums text-zinc-700">{category.gameCount}</span></span>
                 </Link>
               );
             })}
           </nav>
         </div>
         <div className="border-t border-white/[0.06] p-3">
-          {!collapsed && <div className="mb-3 overflow-hidden rounded-xl border border-violet-400/10 bg-gradient-to-br from-violet-500/10 to-indigo-500/[0.03] p-3.5"><p className="text-xs font-bold text-violet-200">Your arcade, everywhere.</p><p className="mt-1.5 text-[11px] leading-5 text-zinc-500">Create a free account to keep your favorites and play history in sync.</p><button onClick={() => openAuth("register")} className="mt-3 text-xs font-bold text-violet-300 hover:text-white">Join Nexus →</button></div>}
+          <div className={`mb-3 overflow-hidden rounded-xl border border-violet-400/10 bg-gradient-to-br from-violet-500/10 to-indigo-500/[0.03] p-3.5 ${collapsed ? "lg:hidden" : ""}`}><p className="text-xs font-bold text-violet-200">Your arcade, everywhere.</p><p className="mt-1.5 text-[11px] leading-5 text-zinc-500">Create a free account to keep your favorites and play history in sync.</p><button onClick={() => openAuth("register")} className="mt-3 text-xs font-bold text-violet-300 hover:text-white">Join Nexus →</button></div>
           <button onClick={toggleCollapsed} className={`hidden w-full items-center rounded-lg py-2 text-xs text-zinc-600 hover:bg-white/5 hover:text-zinc-300 lg:flex ${collapsed ? "justify-center" : "justify-center gap-2"}`} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}><ChevronRight size={15} className={collapsed ? "" : "rotate-180"} />{!collapsed && "Collapse"}</button>
         </div>
       </aside>
 
       <div className={`transition-[margin] duration-300 ${collapsed ? "lg:ml-[84px]" : "lg:ml-[248px]"}`}>
         <header className="sticky top-0 z-40 flex h-[76px] items-center gap-3 border-b border-white/[0.06] bg-[#0c0d14]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-          <button onClick={() => setMobileOpen(true)} className="icon-button lg:hidden" aria-label="Open navigation"><Menu size={20} /></button>
+          <button onClick={() => setMobileOpen(true)} className="icon-button lg:hidden" aria-label="Open navigation" aria-controls="portal-sidebar" aria-expanded={mobileOpen}><Menu size={20} /></button>
+          <button onClick={toggleCollapsed} className="icon-button hidden lg:inline-flex" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-controls="portal-sidebar" aria-expanded={!collapsed}><Menu size={20} /></button>
           <div className="relative ml-auto w-full max-w-[520px] sm:ml-0">
             <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
             <input
