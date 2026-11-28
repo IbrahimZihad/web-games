@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import * as Sentry from "@sentry/nextjs";
 import { trace } from "@opentelemetry/api";
 import { Queue, Worker, type Job } from "bullmq";
-import { registerServiceTelemetry } from "../src/lib/telemetry";
+import { registerServiceTelemetry } from "../src/lib/telemetry.mjs";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath)) process.loadEnvFile(envPath);
@@ -44,8 +44,8 @@ function delay(ms: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { aggregatePlayCounts, prunePlayHistory } = await import("../src/lib/play-counts");
-  const { prisma } = await import("../src/lib/prisma");
+  const { aggregatePlayCounts, prunePlayHistory } = await import("../src/lib/play-counts.js");
+  const { prisma } = await import("../src/lib/prisma.js");
   const batchSize = envInteger("PLAY_COUNT_BATCH_SIZE", 5_000, 1, 20_000);
   const intervalMs = envInteger("PLAY_COUNT_WORKER_INTERVAL_MS", 1_000, 100, 60_000);
   const guestRetentionDays = envInteger("PLAY_HISTORY_GUEST_RETENTION_DAYS", 90, 1, 3_650);

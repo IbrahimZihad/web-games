@@ -6,10 +6,10 @@ import express from "express";
 import { Server, type Socket } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { context, propagation, ROOT_CONTEXT, trace } from "@opentelemetry/api";
-import { createRedisClient } from "../../../src/lib/redis";
-import { verifySessionToken } from "../../../src/lib/session";
-import { registerServiceTelemetry } from "../../../src/lib/telemetry";
-import { PresenceStore } from "./presence-store";
+import { createRedisClient } from "../../../src/lib/redis.js";
+import { verifySessionToken } from "../../../src/lib/session.js";
+import { registerServiceTelemetry } from "../../../src/lib/telemetry.mjs";
+import { PresenceStore } from "./presence-store.js";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath)) process.loadEnvFile(envPath);
