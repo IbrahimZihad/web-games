@@ -252,14 +252,16 @@ export function PortalShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className={`transition-[margin] duration-300 ${collapsed ? "lg:ml-[84px]" : "lg:ml-[248px]"}`}>
-        <header className="sticky top-0 z-40 flex h-[76px] items-center gap-3 border-b border-white/[0.06] bg-[#0c0d14]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-          <span className="lg:hidden">
-            <button onClick={() => setMobileOpen(true)} className="icon-button" aria-label="Open navigation" aria-controls="portal-sidebar" aria-expanded={mobileOpen}><Menu size={20} /></button>
-          </span>
-          <span className="hidden lg:inline-flex">
-            <button onClick={toggleCollapsed} className="icon-button" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-controls="portal-sidebar" aria-expanded={!collapsed}><Menu size={20} /></button>
-          </span>
-          <div className="relative ml-auto w-full max-w-[520px] sm:ml-0">
+        <header className="sticky top-0 z-40 grid h-[76px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.06] bg-[#0c0d14]/90 px-4 backdrop-blur-xl sm:px-6 lg:grid-cols-[1fr_minmax(0,520px)_1fr] lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="lg:hidden">
+              <button onClick={() => setMobileOpen(true)} className="icon-button" aria-label="Open navigation" aria-controls="portal-sidebar" aria-expanded={mobileOpen}><Menu size={20} /></button>
+            </span>
+            <span className="hidden lg:inline-flex">
+              <button onClick={toggleCollapsed} className="icon-button" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-controls="portal-sidebar" aria-expanded={!collapsed}><Menu size={20} /></button>
+            </span>
+          </div>
+          <div className="relative w-full min-w-0 max-w-[520px] justify-self-center">
             <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
             <input
               ref={searchRef}
@@ -292,17 +294,18 @@ export function PortalShell({ children }: { children: ReactNode }) {
               </div>
             )}
           </div>
-          {realtimeConnected && onlineCount !== null && (
-            <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04] px-3 py-2 text-xs font-semibold text-emerald-300 md:flex" title="Players currently online">
-              <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" /><span className="relative inline-flex size-2 rounded-full bg-emerald-400" /></span>
-              <Users size={14} />{formatCompact(onlineCount)} live
-            </div>
-          )}
-          <button onClick={() => setFavoritesOpen(true)} className="icon-button relative shrink-0" aria-label={`Open favorites, ${favoriteIds.length} saved`}>
-            <Bookmark size={19} />
-            {favoriteIds.length > 0 && <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-violet-500 px-1 text-[9px] font-bold text-white">{favoriteIds.length}</span>}
-          </button>
-          <div className="relative shrink-0" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setProfileOpen(false); }}>
+          <div className="flex min-w-0 items-center justify-end gap-3">
+            {realtimeConnected && onlineCount !== null && (
+              <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04] px-3 py-2 text-xs font-semibold text-emerald-300 md:flex" title="Players currently online">
+                <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" /><span className="relative inline-flex size-2 rounded-full bg-emerald-400" /></span>
+                <Users size={14} />{formatCompact(onlineCount)} live
+              </div>
+            )}
+            <button onClick={() => setFavoritesOpen(true)} className="icon-button relative shrink-0" aria-label={`Open favorites, ${favoriteIds.length} saved`}>
+              <Bookmark size={19} />
+              {favoriteIds.length > 0 && <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-violet-500 px-1 text-[9px] font-bold text-white">{favoriteIds.length}</span>}
+            </button>
+            <div className="relative shrink-0" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setProfileOpen(false); }}>
             {authLoading ? <div className="skeleton h-10 w-24 rounded-xl" /> : user ? (
               <button onClick={() => setProfileOpen((value) => !value)} className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.035] px-2.5 text-sm font-semibold text-zinc-200 hover:bg-white/[0.06]">
                 <span className="grid size-6 place-items-center rounded-lg bg-gradient-to-br from-violet-400 to-indigo-600 text-[11px] font-black text-white">{user.username.slice(0, 1).toUpperCase()}</span>
@@ -320,6 +323,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
                 <button onClick={() => { setProfileOpen(false); void logout(); }} className="mt-1 w-full rounded-lg border-t border-white/[0.06] px-3 py-2.5 text-left text-sm text-zinc-400 hover:bg-white/5 hover:text-white">Sign out</button>
               </div>
             )}
+            </div>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1700px] px-4 pb-20 pt-6 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
