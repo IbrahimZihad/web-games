@@ -1,5 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { unstable_cache } from "next/cache";
+import { RelationshipGraph } from "@/lib/graph";
+import { leaderboard } from "@/lib/leaderboard";
+import { LruCache } from "@/lib/lru-cache";
 import { prisma } from "@/lib/prisma";
 import type {
   AdminStats,
@@ -9,6 +12,7 @@ import type {
   GameFilters,
   GameStatus,
   HomeFeed,
+  LeaderboardEntryDTO,
   PublicUser,
   TagDTO,
 } from "@/lib/types";
@@ -36,6 +40,7 @@ type CategoryCounts = ReadonlyMap<number, number>;
 
 const catalogCache = { tags: ["catalog"], revalidate: 30 };
 const MAX_LIBRARY_GAMES = 200;
+const categoryCountCache = new LruCache<string, CategoryCounts>(8, 30_000);
 
 function toCategory(category: GameCardRecord["category"], gameCount: number): CategoryDTO {
   return {
@@ -99,12 +104,21 @@ function mapGameCards(games: GameCardRecord[], categoryCounts: CategoryCounts, n
 }
 
 async function getCategoryCounts(): Promise<CategoryCounts> {
+  const cacheKey = "published";
+  const cached = categoryCountCache.get(cacheKey);
+  if (cached) return cached;
   const counts = await prisma.game.groupBy({
     by: ["categoryId"],
     where: { status: "PUBLISHED" },
     _count: { _all: true },
   });
-  return new Map(counts.map((item) => [item.categoryId, item._count._all]));
+  const result = new Map(counts.map((item) => [item.categoryId, item._count._all]));
+  categoryCountCache.set(cacheKey, result);
+  return result;
+}
+
+export function clearCatalogLru(): void {
+  categoryCountCache.clear();
 }
 
 function boundedInteger(value: number | undefined, fallback: number, min: number, max: number): number {
@@ -374,6 +388,94 @@ export async function getUserLibrary(userId: number) {
       playedAt: latestPlayedAt.get(game.id) || null,
     })),
   };
+}
+
+export async function getFollowing(userId: number): Promise<PublicUser[]> {
+  const follows = await prisma.userFollow.findMany({
+    where: { followerId: userId, followee: { isActive: true } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: {
+      followee: { select: { id: true, username: true, avatarUrl: true, role: true } },
+    },
+  });
+  return follows.map((follow) => follow.followee);
+}
+
+export async function getFollowers(userId: number): Promise<PublicUser[]> {
+  const follows = await prisma.userFollow.findMany({
+    where: { followeeId: userId, follower: { isActive: true } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: {
+      follower: { select: { id: true, username: true, avatarUrl: true, role: true } },
+    },
+  });
+  return follows.map((follow) => follow.follower);
+}
+
+export async function getNetworkRecommendations(userId: number, limit = 8): Promise<GameDTO[]> {
+  const boundedLimit = Math.max(1, Math.min(12, Math.trunc(limit)));
+  const [follows, ownFavorites] = await Promise.all([
+    prisma.userFollow.findMany({
+      where: { followerId: userId, followee: { isActive: true } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: { followeeId: true },
+    }),
+    prisma.userFavorite.findMany({ where: { userId }, select: { gameId: true } }),
+  ]);
+  const followeeIds = follows.map((follow) => follow.followeeId);
+  if (!followeeIds.length) return [];
+
+  const favoriteRows = await prisma.userFavorite.findMany({
+    where: { userId: { in: followeeIds }, game: { status: "PUBLISHED" } },
+    orderBy: { createdAt: "desc" },
+    take: 1_000,
+    select: { userId: true, gameId: true },
+  });
+  const graph = new RelationshipGraph<string>();
+  const root = `user:${userId}`;
+  graph.addVertex(root);
+  for (const followeeId of followeeIds) graph.addEdge(root, `user:${followeeId}`);
+  const affinity = new Map<number, number>();
+  for (const favorite of favoriteRows) {
+    const gameNode = `game:${favorite.gameId}`;
+    graph.addEdge(`user:${favorite.userId}`, gameNode);
+    affinity.set(favorite.gameId, (affinity.get(favorite.gameId) ?? 0) + 1);
+  }
+
+  const excluded = new Set(ownFavorites.map((favorite) => favorite.gameId));
+  const distances = graph.distancesFrom(root, 2);
+  const candidateIds = [...distances.entries()]
+    .filter(([node, distance]) => distance === 2 && node.startsWith("game:"))
+    .map(([node]) => Number(node.slice(5)))
+    .filter((id) => Number.isSafeInteger(id) && !excluded.has(id))
+    .sort((left, right) => (affinity.get(right) ?? 0) - (affinity.get(left) ?? 0) || left - right)
+    .slice(0, boundedLimit);
+  if (!candidateIds.length) return [];
+
+  const [games, counts] = await Promise.all([
+    prisma.game.findMany({ where: { id: { in: candidateIds }, status: "PUBLISHED" }, include: gameCardInclude }),
+    getCategoryCounts(),
+  ]);
+  const byId = new Map(games.map((game) => [game.id, toGame(game, [], counts)]));
+  return candidateIds.map((id) => byId.get(id)).filter((game): game is GameDTO => Boolean(game));
+}
+
+export async function getLeaderboard(gameId: number, limit = 10): Promise<LeaderboardEntryDTO[]> {
+  const boundedLimit = Math.max(1, Math.min(50, Math.trunc(limit)));
+  const members = await leaderboard.topMembers(gameId, boundedLimit);
+  if (!members.length) return [];
+  const users = await prisma.user.findMany({
+    where: { id: { in: members.map((member) => member.userId) }, isActive: true },
+    select: { id: true, username: true, avatarUrl: true, role: true },
+  });
+  const byId = new Map(users.map((user) => [user.id, user]));
+  return members.flatMap((member, index) => {
+    const user = byId.get(member.userId);
+    return user ? [{ rank: index + 1, score: member.score, user }] : [];
+  });
 }
 
 export async function getAdminStats(): Promise<AdminStats> {

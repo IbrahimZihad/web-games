@@ -13,15 +13,31 @@ export interface SessionRecord {
 export class RoomRegistry {
   private readonly rooms = new Map<string, RoomRecord>();
   private readonly sessions = new Map<string, SessionRecord>();
+  private readonly onlinePlayers = new Map<number, Set<string>>();
   private roomSequence = 0;
 
   registerSession(socketId: string, userId: number | null): void {
-    if (!this.sessions.has(socketId)) this.sessions.set(socketId, { userId, roomId: null });
+    const existing = this.sessions.get(socketId);
+    if (existing?.userId !== null && existing?.userId !== undefined) {
+      this.removeOnlinePlayer(existing.userId, socketId);
+    }
+    this.sessions.set(socketId, { userId, roomId: existing?.roomId ?? null });
+    if (userId !== null) {
+      const sockets = this.onlinePlayers.get(userId) ?? new Set<string>();
+      sockets.add(socketId);
+      this.onlinePlayers.set(userId, sockets);
+    }
   }
 
   unregisterSession(socketId: string): void {
     this.leave(socketId);
+    const session = this.sessions.get(socketId);
+    if (session?.userId !== null && session?.userId !== undefined) this.removeOnlinePlayer(session.userId, socketId);
     this.sessions.delete(socketId);
+  }
+
+  isUserOnline(userId: number): boolean {
+    return (this.onlinePlayers.get(userId)?.size ?? 0) > 0;
   }
 
   createRoom(gameId: number): RoomRecord {
@@ -67,5 +83,16 @@ export class RoomRegistry {
 
   get sessionCount(): number {
     return this.sessions.size;
+  }
+
+  get onlinePlayerCount(): number {
+    return this.onlinePlayers.size;
+  }
+
+  private removeOnlinePlayer(userId: number, socketId: string): void {
+    const sockets = this.onlinePlayers.get(userId);
+    if (!sockets) return;
+    sockets.delete(socketId);
+    if (sockets.size === 0) this.onlinePlayers.delete(userId);
   }
 }

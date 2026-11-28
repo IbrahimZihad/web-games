@@ -9,7 +9,10 @@ import { context, propagation, ROOT_CONTEXT, trace } from "@opentelemetry/api";
 import { createRedisClient } from "../../../src/lib/redis.js";
 import { verifySessionToken } from "../../../src/lib/session.js";
 import { registerServiceTelemetry } from "../../../src/lib/telemetry.mjs";
+import { MatchmakingService, type MatchmakingMatch } from "./matchmaking.js";
 import { PresenceStore } from "./presence-store.js";
+import { FifoQueue } from "./queues.js";
+import { RoomRegistry } from "./room-registry.js";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath)) process.loadEnvFile(envPath);
@@ -43,6 +46,10 @@ const allowedOrigins = new Set([
 ]);
 const tracer = trace.getTracer("nexus-play-realtime");
 const presence = new PresenceStore();
+const rooms = new RoomRegistry();
+const matchmaking = new MatchmakingService(rooms);
+const eventQueue = new FifoQueue<() => void | Promise<void>>();
+let drainingEvents = false;
 const adapterPubClient = process.env.REDIS_URL ? createRedisClient("nexus-socket-adapter-pub") : null;
 const adapterSubClient = adapterPubClient?.duplicate() ?? null;
 
@@ -63,7 +70,16 @@ app.use((request, response, next) => {
   });
 });
 app.get("/healthz", (_request, response) => {
-  response.json({ status: "ok", service: "nexus-play-realtime", presence: presence.mode });
+  response.json({
+    status: "ok",
+    service: "nexus-play-realtime",
+    presence: presence.mode,
+    sessions: rooms.sessionCount,
+    onlinePlayers: rooms.onlinePlayerCount,
+    rooms: rooms.roomCount,
+    matchmakingQueue: matchmaking.queueSize,
+    eventQueue: eventQueue.size,
+  });
 });
 
 const io = new Server(httpServer, {
@@ -113,7 +129,60 @@ function broadcastPresence(gameId: number | null, count: number): void {
   else io.to(roomName(gameId)).emit("presence:update", payload);
 }
 
+function scheduleEventDrain(): void {
+  if (drainingEvents) return;
+  drainingEvents = true;
+  setImmediate(() => {
+    void (async () => {
+      try {
+        while (eventQueue.size > 0) {
+          const event = eventQueue.dequeue();
+          if (!event) break;
+          try {
+            await event();
+          } catch (error) {
+            Sentry.captureException(error);
+          }
+        }
+      } finally {
+        drainingEvents = false;
+        if (eventQueue.size > 0) scheduleEventDrain();
+      }
+    })();
+  });
+}
+
+function enqueueEvent(socket: Socket, event: () => void | Promise<void>): void {
+  if (eventQueue.size >= 2_000) {
+    socket.emit("matchmaking:error", { message: "The event queue is busy. Try again shortly." });
+    return;
+  }
+  eventQueue.enqueue(event);
+  scheduleEventDrain();
+}
+
+function emitMatches(matches: MatchmakingMatch[]): void {
+  for (const match of matches) {
+    for (const player of match.players) {
+      const socket = io.sockets.sockets.get(player.socketId);
+      if (!socket?.connected) continue;
+      socket.join(match.roomId);
+      socket.emit("matchmaking:matched", {
+        roomId: match.roomId,
+        gameId: match.gameId,
+        players: match.players.map((entry) => ({
+          socketId: entry.socketId,
+          userId: entry.userId,
+          username: entry.username,
+          skill: entry.skill,
+        })),
+      });
+    }
+  }
+}
+
 io.on("connection", (socket: Socket) => {
+  rooms.registerSession(socket.id, socket.data.user?.id ?? null);
   let gameId: number | null = null;
   let lastSubscribeAt = 0;
   const heartbeat = setInterval(() => {

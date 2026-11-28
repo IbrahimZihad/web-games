@@ -43,6 +43,19 @@ export interface CommentDTO {
   user: PublicUser;
 }
 
+export interface LeaderboardEntryDTO {
+  rank: number;
+  score: number;
+  user: PublicUser;
+}
+
+export interface ScoreRecordDTO {
+  gameId: number;
+  userId: number;
+  score: number;
+  updatedAt: string;
+}
+
 export interface GameDTO {
   id: number;
   title: string;

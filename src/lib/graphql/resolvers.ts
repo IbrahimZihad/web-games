@@ -7,18 +7,24 @@ import type { NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { clearSession, setSession } from "@/lib/auth";
 import {
+  clearCatalogLru,
   getAdminGames,
   getAdminStats,
   getCategories,
+  getFollowers,
+  getFollowing,
   getGameById,
   getGameBySlug,
   getGames,
   getGamesByIds,
   getHomeFeed,
+  getLeaderboard,
+  getNetworkRecommendations,
   getTags,
   getUserLibrary,
   toComment,
 } from "@/lib/data";
+import { leaderboard } from "@/lib/leaderboard";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import type { SessionUser } from "@/lib/types";
@@ -52,6 +58,7 @@ function authAdmin(context: GraphQLContext): SessionUser {
 }
 
 function invalidateCatalog() {
+  clearCatalogLru();
   revalidateTag("catalog", "max");
 }
 
@@ -122,6 +129,14 @@ export const resolvers = {
       (await getUserLibrary(authUser(context).id)).playHistory,
     myLibrary: async (_parent: unknown, _args: unknown, context: GraphQLContext) =>
       getUserLibrary(authUser(context).id),
+    myFollowing: async (_parent: unknown, _args: unknown, context: GraphQLContext) =>
+      getFollowing(authUser(context).id),
+    myFollowers: async (_parent: unknown, _args: unknown, context: GraphQLContext) =>
+      getFollowers(authUser(context).id),
+    networkRecommendations: async (_parent: unknown, args: { limit?: number }, context: GraphQLContext) =>
+      getNetworkRecommendations(authUser(context).id, args.limit ?? 8),
+    leaderboard: async (_parent: unknown, args: { gameId: string; limit?: number }) =>
+      getLeaderboard(parseId(args.gameId), args.limit ?? 10),
     adminStats: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       authAdmin(context);
       return getAdminStats();
@@ -267,6 +282,54 @@ export const resolvers = {
       });
       invalidateCatalog();
       return toComment(comment);
+    },
+    submitScore: async (_parent: unknown, args: { gameId: string; score: number }, context: GraphQLContext) => {
+      const user = authUser(context);
+      const gameId = parseId(args.gameId);
+      if (!Number.isSafeInteger(args.score) || args.score < 0 || args.score > 999_999_999) {
+        fail("Score must be a whole number between 0 and 999,999,999.");
+      }
+      await enforceRateLimit(context.request, "score", 30, 60_000, `user:${user.id}`);
+      const game = await prisma.game.findUnique({ where: { id: gameId }, select: { status: true } });
+      if (!game || game.status !== "PUBLISHED") fail("Game not found.", "NOT_FOUND");
+
+      await prisma.$queryRaw`
+        INSERT INTO GameScore (gameId, userId, score, updatedAt)
+        VALUES (${gameId}, ${user.id}, ${args.score}, CURRENT_TIMESTAMP(0))
+        ON DUPLICATE KEY UPDATE
+          score = GREATEST(GameScore.score, VALUES(score)),
+          updatedAt = CURRENT_TIMESTAMP(0)
+      `;
+      const record = await prisma.gameScore.findUnique({
+        where: { gameId_userId: { gameId, userId: user.id } },
+        select: { gameId: true, userId: true, score: true, updatedAt: true },
+      });
+      if (!record) fail("The score could not be saved.", "INTERNAL_SERVER_ERROR");
+      await leaderboard.record(gameId, user.id, record.score);
+      return { ...record, updatedAt: record.updatedAt.toISOString() };
+    },
+    followUser: async (_parent: unknown, args: { userId: string }, context: GraphQLContext) => {
+      const user = authUser(context);
+      const followeeId = parseId(args.userId);
+      if (followeeId === user.id) fail("You cannot follow yourself.");
+      await enforceRateLimit(context.request, "follow", 60, 60_000, `user:${user.id}`);
+      const followee = await prisma.user.findFirst({
+        where: { id: followeeId, isActive: true },
+        select: { id: true },
+      });
+      if (!followee) fail("Player not found.", "NOT_FOUND");
+      await prisma.userFollow.upsert({
+        where: { followerId_followeeId: { followerId: user.id, followeeId } },
+        update: {},
+        create: { followerId: user.id, followeeId },
+      });
+      return true;
+    },
+    unfollowUser: async (_parent: unknown, args: { userId: string }, context: GraphQLContext) => {
+      const user = authUser(context);
+      const followeeId = parseId(args.userId);
+      await prisma.userFollow.deleteMany({ where: { followerId: user.id, followeeId } });
+      return true;
     },
     syncGuestLibrary: async (
       _parent: unknown,

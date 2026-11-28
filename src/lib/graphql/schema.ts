@@ -97,6 +97,19 @@ export const typeDefs = /* GraphQL */ `
     playHistory: [PlayHistoryItem!]!
   }
 
+  type LeaderboardEntry {
+    rank: Int!
+    score: Int!
+    user: PublicUser!
+  }
+
+  type ScoreRecord {
+    gameId: ID!
+    userId: ID!
+    score: Int!
+    updatedAt: String!
+  }
+
   type AdminStats {
     totalGames: Int!
     publishedGames: Int!
@@ -141,6 +154,10 @@ export const typeDefs = /* GraphQL */ `
     myFavorites: [Game!]!
     myPlayHistory: [PlayHistoryItem!]!
     myLibrary: PlayerLibrary!
+    myFollowing: [PublicUser!]!
+    myFollowers: [PublicUser!]!
+    networkRecommendations(limit: Int = 8): [Game!]!
+    leaderboard(gameId: ID!, limit: Int = 10): [LeaderboardEntry!]!
     adminStats: AdminStats!
     adminGames(search: String, status: GameStatus, limit: Int, offset: Int): [Game!]!
   }
@@ -154,6 +171,9 @@ export const typeDefs = /* GraphQL */ `
     toggleFavorite(gameId: ID!): Boolean!
     voteGame(gameId: ID!, vote: VoteType!): Game!
     addComment(gameId: ID!, body: String!): Comment!
+    submitScore(gameId: ID!, score: Int!): ScoreRecord!
+    followUser(userId: ID!): Boolean!
+    unfollowUser(userId: ID!): Boolean!
     syncGuestLibrary(favoriteGameIds: [ID!], playedGameIds: [ID!]): Boolean!
 
     createGame(input: UpsertGameInput!): Game!
