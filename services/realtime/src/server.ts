@@ -1,0 +1,177 @@
+import { existsSync } from "node:fs";
+import { createServer } from "node:http";
+import { resolve } from "node:path";
+import * as Sentry from "@sentry/nextjs";
+import express from "express";
+import { Server, type Socket } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { context, propagation, ROOT_CONTEXT, trace } from "@opentelemetry/api";
+import { createRedisClient } from "../../../src/lib/redis";
+import { verifySessionToken } from "../../../src/lib/session";
+import { registerServiceTelemetry } from "../../../src/lib/telemetry";
+import { PresenceStore } from "./presence-store";
+
+const envPath = resolve(process.cwd(), ".env");
+if (existsSync(envPath)) process.loadEnvFile(envPath);
+
+const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0),
+    sendDefaultPii: false,
+  });
+}
+registerServiceTelemetry("nexus-play-realtime");
+
+const app = express();
+const httpServer = createServer(app);
+const port = Number(process.env.REALTIME_PORT || 3001);
+const host = process.env.REALTIME_HOST || "127.0.0.1";
+const appOrigin = new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").origin;
+const allowedOrigins = new Set([
+  appOrigin,
+  ...(process.env.REALTIME_ALLOWED_ORIGINS || "").split(",").map((value) => value.trim()).filter(Boolean),
+]);
+const tracer = trace.getTracer("nexus-play-realtime");
+const presence = new PresenceStore();
+const adapterClient = process.env.REDIS_URL ? createRedisClient("nexus-socket-adapter") : null;
+
+app.disable("x-powered-by");
+app.use((request, response, next) => {
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("Cache-Control", "no-store");
+  const parentContext = propagation.extract(ROOT_CONTEXT, request.headers);
+  context.with(parentContext, () => {
+    tracer.startActiveSpan(`${request.method} ${request.path}`, (span) => {
+      response.on("finish", () => {
+        span.setAttribute("http.response.status_code", response.statusCode);
+        span.end();
+      });
+      next();
+    });
+  });
+});
+app.get("/healthz", (_request, response) => {
+  response.json({ status: "ok", service: "nexus-play-realtime", presence: presence.mode });
+});
+
+const io = new Server(httpServer, {
+  cors: { origin: [...allowedOrigins], credentials: true },
+  allowRequest: (request, callback) => {
+    const origin = request.headers.origin;
+    callback(!origin || allowedOrigins.has(origin));
+  },
+  transports: ["websocket", "polling"],
+  maxHttpBufferSize: 16_384,
+  pingInterval: 25_000,
+  pingTimeout: 20_000,
+});
+
+if (adapterClient) {
+  adapterClient.on("error", () => console.error("Socket.IO Redis adapter connection error."));
+  io.adapter(createAdapter(adapterClient));
+}
+
+function readSessionCookie(header: string | undefined): string | null {
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [name, ...value] = part.trim().split("=");
+    if (name === "portal_session") return decodeURIComponent(value.join("="));
+  }
+  return null;
+}
+
+io.use(async (socket, next) => {
+  try {
+    const token = readSessionCookie(socket.request.headers.cookie);
+    socket.data.user = token ? await verifySessionToken(token) : null;
+    next();
+  } catch {
+    next();
+  }
+});
+
+function roomName(gameId: number | null): string {
+  return gameId === null ? "lobby" : `game:${gameId}`;
+}
+
+function broadcastPresence(gameId: number | null, count: number): void {
+  const payload = { gameId, count };
+  if (gameId === null) io.emit("presence:update", payload);
+  else io.to(roomName(gameId)).emit("presence:update", payload);
+}
+
+io.on("connection", (socket: Socket) => {
+  let gameId: number | null = null;
+  let lastSubscribeAt = 0;
+  const heartbeat = setInterval(() => {
+    void presence.move(socket.id, gameId, gameId).catch(() => null);
+  }, 20_000);
+  heartbeat.unref();
+
+  void presence.connect(socket.id).then((onlineCount) => {
+    if (!socket.connected) return;
+    socket.emit("presence:state", { gameId: null, count: onlineCount });
+    broadcastPresence(null, onlineCount);
+  });
+
+  socket.on("presence:subscribe", (payload: { gameId?: number | null } | null) => {
+    const now = Date.now();
+    if (now - lastSubscribeAt < 500) return;
+    lastSubscribeAt = now;
+    const rawGameId = payload?.gameId;
+    const nextGameId = rawGameId == null
+      ? null
+      : Number.isSafeInteger(rawGameId) && rawGameId > 0 ? rawGameId : undefined;
+    if (nextGameId === undefined) {
+      socket.emit("presence:error", { message: "A valid game id is required." });
+      return;
+    }
+    if (nextGameId === gameId) return;
+
+    void presence.move(socket.id, gameId, nextGameId).then((result) => {
+      if (!socket.connected) return;
+      const previousGameId = gameId;
+      if (previousGameId !== nextGameId) {
+        socket.leave(roomName(previousGameId));
+        broadcastPresence(previousGameId, result.previousCount);
+      }
+      gameId = nextGameId;
+      socket.join(roomName(gameId));
+      broadcastPresence(gameId, result.count);
+      socket.emit("presence:state", { gameId, count: result.count });
+    }).catch(() => {
+      socket.emit("presence:error", { message: "Presence is temporarily unavailable." });
+    });
+  });
+
+  socket.on("disconnect", () => {
+    clearInterval(heartbeat);
+    const previousGameId = gameId;
+    void presence.leave(socket.id, previousGameId).then((result) => {
+      broadcastPresence(previousGameId, result.gameCount);
+      broadcastPresence(null, result.onlineCount);
+    });
+  });
+});
+
+httpServer.listen(port, host, () => {
+  console.log(`Nexus realtime service listening on ${host}:${port}.`);
+});
+
+let shuttingDown = false;
+async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received; stopping Nexus realtime service.`);
+  await new Promise<void>((resolveClose) => io.close(() => resolveClose()));
+  await presence.close();
+  if (adapterClient && adapterClient.status !== "end") await adapterClient.quit().catch(() => adapterClient.disconnect());
+  if (sentryDsn) await Sentry.flush(2_000);
+}
+
+process.on("SIGINT", () => { void shutdown("SIGINT"); });
+process.on("SIGTERM", () => { void shutdown("SIGTERM"); });

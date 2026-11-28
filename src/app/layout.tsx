@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AppProviders } from "@/components/providers";
 import { CookiePreferencesProvider } from "@/components/cookie-preferences";
+import { RealtimeProvider } from "@/components/realtime-provider";
 import { SiteChrome } from "@/components/portal-shell";
 import { JsonLd } from "@/components/json-ld";
 import {
@@ -53,9 +54,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full bg-[#0c0d14] text-zinc-100">
         <JsonLd data={websiteJsonLd} />
         <AppProviders>
-          <CookiePreferencesProvider>
-            <SiteChrome>{children}</SiteChrome>
-          </CookiePreferencesProvider>
+          <RealtimeProvider>
+            <CookiePreferencesProvider>
+              <SiteChrome>{children}</SiteChrome>
+            </CookiePreferencesProvider>
+          </RealtimeProvider>
         </AppProviders>
       </body>
     </html>

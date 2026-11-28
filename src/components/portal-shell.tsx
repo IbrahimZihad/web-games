@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Gamepad2, Home, Menu, Search, Sparkles, X } from "lucide-react";
+import { Bookmark, CheckCircle2, ChevronLeft, ChevronRight, CircleAlert, Gamepad2, Home, Menu, Search, Sparkles, Users, X } from "lucide-react";
 import { AuthDialog } from "@/components/auth-dialog";
 import { useCookiePreferences } from "@/components/cookie-preferences";
 import { useApp } from "@/components/providers";
+import { useRealtime } from "@/components/realtime-provider";
 import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/cookies";
 import { formatCompact } from "@/lib/format";
 import type { CategoryDTO, GameDTO } from "@/lib/types";
@@ -137,6 +138,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, authLoading, favoriteIds, setFavoritesOpen, openAuth, logout } = useApp();
   const { preferencesEnabled, openSettings } = useCookiePreferences();
+  const { connected: realtimeConnected, onlineCount } = useRealtime();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -284,6 +286,12 @@ export function PortalShell({ children }: { children: ReactNode }) {
               </div>
             )}
           </div>
+          {realtimeConnected && onlineCount !== null && (
+            <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.04] px-3 py-2 text-xs font-semibold text-emerald-300 md:flex" title="Players currently online">
+              <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" /><span className="relative inline-flex size-2 rounded-full bg-emerald-400" /></span>
+              <Users size={14} />{formatCompact(onlineCount)} live
+            </div>
+          )}
           <button onClick={() => setFavoritesOpen(true)} className="icon-button relative shrink-0" aria-label={`Open favorites, ${favoriteIds.length} saved`}>
             <Bookmark size={19} />
             {favoriteIds.length > 0 && <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-violet-500 px-1 text-[9px] font-bold text-white">{favoriteIds.length}</span>}

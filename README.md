@@ -2,12 +2,12 @@
 
 ![Nexus Play — instant browser gaming](public/og.png)
 
-A CrazyGames-style HTML5 game portal built with Next.js App Router, React, TypeScript, Tailwind CSS, GraphQL Yoga, Prisma, and native MySQL 8. No Docker is required or used.
+A CrazyGames-style HTML5 game portal built with Next.js App Router, React, TypeScript, Tailwind CSS, GraphQL Yoga, Prisma, and native MySQL 8. Express and Socket.IO provide realtime presence, Redis and BullMQ provide shared rate limits and background jobs, and Vite builds the PixiJS and Three.js game cartridges. No Docker is required or used.
 
 ## Included
 
 - Responsive public portal with featured carousels, category browsing, search, favorites, recently played games, ratings, comments, and game detail pages.
-- Five original playable Canvas games with keyboard and touch controls.
+- Seven original playable games with keyboard and touch controls, including PixiJS Web Worker simulation and a Three.js 3D racer.
 - Lazy-loaded sandboxed game player with theater mode, fullscreen, restart, sharing, and score messages.
 - JWT sessions in an HTTP-only cookie with PLAYER and ADMIN roles.
 - Guest favorites and play history that synchronize after sign-in.
@@ -17,9 +17,11 @@ A CrazyGames-style HTML5 game portal built with Next.js App Router, React, TypeS
 
 ## Requirements
 
-- Node.js 20.9 or newer.
+- Node.js 20.19 or newer, or Node.js 22.12 or newer.
 - MySQL 8.0 or newer. The included local setup assumes the Windows installer location `C:\Program Files\MySQL\MySQL Server 8.0`.
 - npm.
+- Optional Redis 7 for shared rate limits, Socket.IO scale-out, and BullMQ jobs. Without Redis, rate limits and the play-count worker use bounded local fallbacks.
+- Optional native OpenTelemetry Collector, Prometheus, Grafana, Sentry, and k6 binaries for monitoring and test execution.
 
 ## Local setup
 
@@ -43,7 +45,7 @@ New-Item -ItemType Directory -Force .runtime/mysql/data | Out-Null
 Start MySQL in a separate terminal and leave it running:
 
 ```powershell
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe" --datadir="F:\Ibrahim\web-games\.runtime\mysql\data" --basedir="C:\Program Files\MySQL\MySQL Server 8.0" --port=3307 --bind-address=127.0.0.1 --mysqlx=0 --skip-name-resolve --log-error="F:\Ibrahim\web-games\.runtime\mysql\mysql-error.log" --pid-file="F:\Ibrahim\web-games\.runtime\mysql\mysql.pid"
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe" --datadir="F:\Ibrahim\web-games\.runtime\mysql\data" --basedir="C:\Program Files\MySQL\MySQL Server 8.0" --port=3307 --bind-address=127.0.0.1 --skip-name-resolve --log-error="F:\Ibrahim\web-games\.runtime\mysql\mysql-error.log" --pid-file="F:\Ibrahim\web-games\.runtime\mysql\mysql.pid"
 ```
 
 If `.runtime/mysql/data` is already initialized and the server is running, skip this step.
@@ -66,7 +68,13 @@ For an existing externally managed MySQL instance, copy `.env.example` to `.env`
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. For live presence, start the realtime sidecar in a second terminal:
+
+```bash
+npm run dev:realtime
+```
+
+It listens on `127.0.0.1:3001` by default. Set `NEXT_PUBLIC_REALTIME_URL` when the browser cannot reach that address directly.
 
 ## Demo accounts
 
@@ -84,6 +92,12 @@ Change the administrator password before exposing the portal publicly.
 | `npm run dev` | Start the development server. |
 | `npm run build` | Create an optimized production build. |
 | `npm run start` | Serve the production build. |
+| `npm run dev:realtime` | Start the Express/Socket.IO presence service. |
+| `npm run games:build` | Build the Vite PixiJS and Three.js cartridges. |
+| `npm run worker:play-counts` | Run BullMQ jobs when Redis is configured, otherwise the local polling fallback. |
+| `npm run start:pm2` | Start the web, realtime, and worker processes under PM2. |
+| `npm run k6:smoke` | Run the small k6 HTTP/GraphQL smoke scenario. |
+| `npm run k6:load` | Run the configurable k6 player scenario; capacity testing remains opt-in. |
 | `npm run lint` | Run ESLint. |
 | `npm run typecheck` | Run strict TypeScript checks. |
 | `npm run db:setup` | Configure local databases and generate `.env`. |
@@ -131,3 +145,8 @@ Uploaded files are stored under `public/uploads`. Multi-instance or serverless d
 - Use a managed MySQL database and persistent upload storage for production.
 - Configure a trusted reverse proxy before relying on forwarded client IP headers for rate limiting.
 - Keep the `portal_session` cookie HTTP-only and do not expose the JWT secret to client code.
+- Build with `npm run build`, then run `npm run start:pm2`. The ecosystem starts Next.js, the realtime sidecar, and the play-count worker without Docker.
+- Configure `REDIS_URL` before relying on multi-process presence, distributed rate limits, or BullMQ. `DATABASE_POOL_SIZE` applies per Node process, so size the total pool against the MySQL connection limit.
+- Native monitoring configuration lives in `deploy/monitoring`. Point `OTEL_EXPORTER_OTLP_ENDPOINT` at the collector and optionally configure `NEXT_PUBLIC_SENTRY_DSN`.
+- The Nginx profile proxies `/socket.io/` to port 3001 with WebSocket upgrade headers. Validate it with the included Nginx binary using `scripts/start-nginx.ps1`.
+- k6 scenarios are provided but were not executed as part of this stack integration. Set `K6_BASE_URL`, `K6_GAME_ID`, and `K6_TARGET_VUS` before an explicitly authorized run.

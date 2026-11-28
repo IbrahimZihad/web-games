@@ -11,6 +11,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useApp } from "@/components/providers";
+import { useGamePresence } from "@/components/realtime-provider";
 import { GameGrid } from "@/components/game-row";
 import { graphqlRequest } from "@/lib/client-graphql";
 import { cn, formatCompact, formatDate } from "@/lib/format";
@@ -52,6 +53,7 @@ export function GameExperience({ game }: { game: GameDTO }) {
   const [commentBody, setCommentBody] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [score, setScore] = useState<number | null>(null);
+  const livePlayers = useGamePresence(game.id, playing);
   const viewportRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const saved = isFavorite(game.id);
@@ -266,8 +268,9 @@ export function GameExperience({ game }: { game: GameDTO }) {
             <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-2 bg-gradient-to-b from-black/75 via-black/25 to-transparent px-3 py-3 sm:px-4" role="toolbar" aria-label="Game controls">
               <div className="mr-auto hidden min-w-0 items-center gap-3 lg:flex">
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-violet-500/15 text-violet-300"><Gamepad2 size={18} /></span>
-                <div className="min-w-0"><p className="truncate text-sm font-bold text-white">{game.title}</p><p className="mt-0.5 text-[11px] text-zinc-400">{formatCompact(playCount)} plays</p></div>
+                <div className="min-w-0"><p className="truncate text-sm font-bold text-white">{game.title}</p><p className="mt-0.5 text-[11px] text-zinc-400">{formatCompact(playCount)} plays{livePlayers !== null ? ` · ${formatCompact(livePlayers)} playing now` : ""}</p></div>
               </div>
+              {playing && livePlayers !== null && <span className="mr-auto inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/15 bg-black/55 px-2.5 py-2 text-[11px] font-bold text-emerald-300 backdrop-blur-md sm:hidden"><span className="size-1.5 rounded-full bg-emerald-400" />{formatCompact(livePlayers)} live</span>}
               <div className="pointer-events-auto hidden items-center rounded-lg border border-white/[0.06] bg-black/35 p-0.5 sm:flex">
                 <button onClick={() => handleVote("LIKE")} aria-label="Like game" className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition", vote === "LIKE" ? "bg-emerald-500/15 text-emerald-300" : "text-zinc-300 hover:bg-white/5 hover:text-emerald-300")}><ThumbsUp size={15} />{formatCompact(votes.likes)}</button>
                 <span className="h-4 w-px bg-white/[0.07]" />
