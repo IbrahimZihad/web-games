@@ -9,10 +9,17 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".runtime/**",
     "out/**",
     "build/**",
+    "logs/**",
+    "public/uploads/games/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["ecosystem.config.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
 ]);
 
 export default eslintConfig;

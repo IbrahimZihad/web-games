@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:realtime": "tsx services/realtime/src/server.ts",
+    "dev:realtime": "tsx services/realtime/src/server.mts",
     "build": "npm run games:build && next build",
     "games:build": "npm run games:build:pixi && npm run games:build:three",
-    "games:build:pixi": "vite build --config games/prism-pilot/vite.config.ts",
-    "games:build:three": "vite build --config games/void-rally/vite.config.ts",
+    "games:build:pixi": "vite build --config games/prism-pilot/vite.config.mts",
+    "games:build:three": "vite build --config games/void-rally/vite.config.mts",
     "start": "next start",
     "start:pm2": "pm2 start ecosystem.config.cjs",
     "pm2:logs": "pm2 logs",
@@ -20,7 +20,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "node scripts/setup-local-db.mjs",
-    "worker:play-counts": "tsx scripts/play-count-worker.ts",
+    "worker:play-counts": "tsx scripts/play-count-worker.mts",
     "k6:smoke": "k6 run scripts/k6/smoke.js",
     "k6:load": "k6 run scripts/k6/load.js"
   },

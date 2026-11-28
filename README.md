@@ -45,7 +45,7 @@ New-Item -ItemType Directory -Force .runtime/mysql/data | Out-Null
 Start MySQL in a separate terminal and leave it running:
 
 ```powershell
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe" --datadir="F:\Ibrahim\web-games\.runtime\mysql\data" --basedir="C:\Program Files\MySQL\MySQL Server 8.0" --port=3307 --bind-address=127.0.0.1 --skip-name-resolve --log-error="F:\Ibrahim\web-games\.runtime\mysql\mysql-error.log" --pid-file="F:\Ibrahim\web-games\.runtime\mysql\mysql.pid"
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqld.exe" --datadir="F:\Ibrahim\web-games\.runtime\mysql\data" --basedir="C:\Program Files\MySQL\MySQL Server 8.0" --port=3307 --bind-address=127.0.0.1 --log-error="F:\Ibrahim\web-games\.runtime\mysql\mysql-error.log" --pid-file="F:\Ibrahim\web-games\.runtime\mysql\mysql.pid"
 ```
 
 If `.runtime/mysql/data` is already initialized and the server is running, skip this step.
