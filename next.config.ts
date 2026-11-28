@@ -23,10 +23,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/uploads/games/:path*",
+        // Sandboxed module cartridges run with an opaque "null" origin.
         headers: [
+          { key: "Access-Control-Allow-Origin", value: "null" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
-          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
           { key: "Cache-Control", value: "public, max-age=3600" },
         ],
