@@ -14,7 +14,14 @@ if (sentryDsn) {
     dsn: sentryDsn,
     environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
     tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0),
-    sendDefaultPii: false,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      stackFrameVariables: false,
+    },
   });
 }
 registerServiceTelemetry("nexus-play-worker");
@@ -104,7 +111,7 @@ async function main(): Promise<void> {
 
   const queueName = process.env.BULLMQ_QUEUE_NAME || "nexus-play-counts";
   const connection = { url: process.env.REDIS_URL, maxRetriesPerRequest: null };
-  const queue = new Queue<PlayCountJobData, number, PlayCountJobName>(queueName, {
+  const queue = new Queue<PlayCountJobData, number, string>(queueName, {
     connection,
     defaultJobOptions: {
       attempts: 5,

@@ -20,7 +20,14 @@ if (sentryDsn) {
     dsn: sentryDsn,
     environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
     tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0),
-    sendDefaultPii: false,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      stackFrameVariables: false,
+    },
   });
 }
 registerServiceTelemetry("nexus-play-realtime");
@@ -36,7 +43,8 @@ const allowedOrigins = new Set([
 ]);
 const tracer = trace.getTracer("nexus-play-realtime");
 const presence = new PresenceStore();
-const adapterClient = process.env.REDIS_URL ? createRedisClient("nexus-socket-adapter") : null;
+const adapterPubClient = process.env.REDIS_URL ? createRedisClient("nexus-socket-adapter-pub") : null;
+const adapterSubClient = adapterPubClient?.duplicate() ?? null;
 
 app.disable("x-powered-by");
 app.use((request, response, next) => {
@@ -62,7 +70,7 @@ const io = new Server(httpServer, {
   cors: { origin: [...allowedOrigins], credentials: true },
   allowRequest: (request, callback) => {
     const origin = request.headers.origin;
-    callback(!origin || allowedOrigins.has(origin));
+    callback(null, !origin || allowedOrigins.has(origin));
   },
   transports: ["websocket", "polling"],
   maxHttpBufferSize: 16_384,
@@ -70,9 +78,10 @@ const io = new Server(httpServer, {
   pingTimeout: 20_000,
 });
 
-if (adapterClient) {
-  adapterClient.on("error", () => console.error("Socket.IO Redis adapter connection error."));
-  io.adapter(createAdapter(adapterClient));
+if (adapterPubClient && adapterSubClient) {
+  adapterPubClient.on("error", () => console.error("Socket.IO Redis adapter publisher error."));
+  adapterSubClient.on("error", () => console.error("Socket.IO Redis adapter subscriber error."));
+  io.adapter(createAdapter(adapterPubClient, adapterSubClient));
 }
 
 function readSessionCookie(header: string | undefined): string | null {
@@ -169,7 +178,14 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`${signal} received; stopping Nexus realtime service.`);
   await new Promise<void>((resolveClose) => io.close(() => resolveClose()));
   await presence.close();
-  if (adapterClient && adapterClient.status !== "end") await adapterClient.quit().catch(() => adapterClient.disconnect());
+  await Promise.all([
+    adapterPubClient?.status !== "end"
+      ? adapterPubClient?.quit().catch(() => adapterPubClient?.disconnect())
+      : undefined,
+    adapterSubClient?.status !== "end"
+      ? adapterSubClient?.quit().catch(() => adapterSubClient?.disconnect())
+      : undefined,
+  ]);
   if (sentryDsn) await Sentry.flush(2_000);
 }
 

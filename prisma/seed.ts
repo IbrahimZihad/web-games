@@ -15,7 +15,7 @@ const categories = [
   { name: "Casual", slug: "casual", iconName: "sparkles", displayOrder: 9, description: "Easy to pick up, hard to put down." },
 ];
 
-const tags = ["3D", "HTML5", "WebGL", "Unity", "2 Player", "Endless", "Physics", "Pixel Art", "Car", "Arcade"];
+const tags = ["3D", "HTML5", "WebGL", "Unity", "2 Player", "Endless", "Physics", "Pixel Art", "Car", "Arcade", "PixiJS", "Three.js"];
 
 const games = [
   {
@@ -105,6 +105,50 @@ const games = [
     dislikesCount: 27,
     publishedAt: new Date("2026-11-21T10:00:00Z"),
     tagSlugs: ["html5", "arcade", "2-player"],
+  },
+  {
+    title: "Prism Pilot",
+    slug: "prism-pilot",
+    tagline: "One ship. Every color of chaos.",
+    description: "Split the prism and dive into a vivid arcade swarm in this PixiJS 8 shooter. Pilot a responsive starfighter with WASD or arrow keys, hold Space or the pointer to fire, and unleash a screen-clearing prism burst with Shift. Escalating waves, enemy formations, energy pickups, and a worker-driven simulation keep every run sharp.\n\nBuilt as a full-viewport static cartridge with keyboard, mouse, and touch controls, Prism Pilot launches directly inside the portal and reports your score in real time.",
+    controlsGuide: "**Steer:** WASD or Arrow keys\n**Fire:** Hold Space, mouse, or touch\n**Prism burst:** Shift or the on-screen burst button\n**Pause:** P or Escape\n**Restart:** R",
+    developerName: "Nexus In-House Studio",
+    categorySlug: "shooting",
+    sourceType: "UPLOADED_ZIP" as SourceType,
+    embedUrl: "/uploads/games/prism-pilot/index.html",
+    aspectRatio: "RATIO_16_9" as AspectRatio,
+    orientation: "LANDSCAPE" as Orientation,
+    supportsMobile: true,
+    thumbnailUrl: "/images/games/prism-pilot.svg",
+    isFeatured: true,
+    isTrending: true,
+    playCount: 0n,
+    likesCount: 0,
+    dislikesCount: 0,
+    publishedAt: new Date("2026-11-24T12:00:00Z"),
+    tagSlugs: ["html5", "arcade", "webgl", "pixijs"],
+  },
+  {
+    title: "Void Rally",
+    slug: "void-rally",
+    tagline: "No finish line. Only velocity.",
+    description: "Thread a neon hover craft through an endless 3D highway in this Three.js racer. Switch lanes with A / D or the arrow keys, hold Space to burn flux boost, and swipe or use the touch controls on mobile. The road gets faster, traffic gets denser, and every clean dodge pushes your score farther into the void.\n\nBuilt as a full-viewport static cartridge with perspective lighting, fog, camera motion, collectible flux cells, and instant restart, Void Rally delivers a complete browser racing run without external assets.",
+    controlsGuide: "**Steer:** A / D or Left / Right\n**Touch steer:** Swipe or use the arrow buttons\n**Boost:** Hold Space or the on-screen boost button\n**Pause:** P or Escape\n**Restart:** R",
+    developerName: "Nexus In-House Studio",
+    categorySlug: "racing",
+    sourceType: "UPLOADED_ZIP" as SourceType,
+    embedUrl: "/uploads/games/void-rally/index.html",
+    aspectRatio: "RATIO_16_9" as AspectRatio,
+    orientation: "LANDSCAPE" as Orientation,
+    supportsMobile: true,
+    thumbnailUrl: "/images/games/void-rally.svg",
+    isFeatured: true,
+    isTrending: true,
+    playCount: 0n,
+    likesCount: 0,
+    dislikesCount: 0,
+    publishedAt: new Date("2026-11-24T12:05:00Z"),
+    tagSlugs: ["html5", "3d", "webgl", "three-js", "endless", "arcade"],
   },
   {
     title: "Hoop Rush",

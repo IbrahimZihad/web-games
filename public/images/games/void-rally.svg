@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Void Rally</title>
+  <desc id="desc">An original 3D endless racing cover with a cyan and orange hover craft, neon lane barriers, a perspective highway and a vast ringed planet.</desc>
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#040510"/><stop offset=".5" stop-color="#1a0d2b"/><stop offset="1" stop-color="#041b29"/></linearGradient>
+    <radialGradient id="orangeNebula" cx="50%" cy="50%" r="50%"><stop stop-color="#ff7438" stop-opacity=".3"/><stop offset="1" stop-color="#ff7438" stop-opacity="0"/></radialGradient>
+    <radialGradient id="cyanNebula" cx="50%" cy="50%" r="50%"><stop stop-color="#20e9ef" stop-opacity=".23"/><stop offset="1" stop-color="#20e9ef" stop-opacity="0"/></radialGradient>
+    <linearGradient id="asphalt" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#17152b"/><stop offset=".55" stop-color="#090d1b"/><stop offset="1" stop-color="#151027"/></linearGradient>
+    <linearGradient id="craft" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d9ffff"/><stop offset=".28" stop-color="#54f3ef"/><stop offset=".68" stop-color="#167fa9"/><stop offset="1" stop-color="#092e53"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d8ffff"/><stop offset=".35" stop-color="#21466c"/><stop offset="1" stop-color="#090d24"/></linearGradient>
+    <radialGradient id="planet" cx="32%" cy="25%" r="76%"><stop stop-color="#c18aff"/><stop offset=".4" stop-color="#623a9b"/><stop offset=".78" stop-color="#25194e"/><stop offset="1" stop-color="#090d25"/></radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#040510" stop-opacity=".98"/><stop offset=".48" stop-color="#040510" stop-opacity=".64"/><stop offset="1" stop-color="#040510" stop-opacity="0"/></linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="17"/></filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#space)"/>
+  <ellipse cx="1030" cy="280" rx="440" ry="360" fill="url(#orangeNebula)"/>
+  <ellipse cx="720" cy="540" rx="460" ry="270" fill="url(#cyanNebula)"/>
+  <g fill="#d8f8ff">
+    <circle cx="88" cy="82" r="1.6"/><circle cx="186" cy="174" r="1"/><circle cx="278" cy="70" r="2"/><circle cx="370" cy="238" r="1.4"/><circle cx="470" cy="106" r="1.2"/><circle cx="574" cy="48" r="1.8"/>
+    <circle cx="672" cy="174" r="1"/><circle cx="770" cy="76" r="2"/><circle cx="866" cy="214" r="1.3"/><circle cx="954" cy="56" r="1.5"/><circle cx="1060" cy="250" r="1"/><circle cx="1170" cy="104" r="2"/>
+    <circle cx="1240" cy="300" r="1.2"/><circle cx="1010" cy="432" r="1.6"/><circle cx="1138" cy="520" r="1.3"/><circle cx="836" cy="574" r="1.8"/><circle cx="660" cy="654" r="1"/><circle cx="464" cy="566" r="1.5"/>
+    <circle cx="308" cy="482" r="1"/><circle cx="176" cy="586" r="1.8"/><circle cx="60" cy="414" r="1.2"/>
+  </g>
+  <g transform="translate(1084 154)">
+    <circle r="138" fill="#a75cff" opacity=".13" filter="url(#blur)"/>
+    <circle r="106" fill="url(#planet)" stroke="#b98aff" stroke-opacity=".38" stroke-width="2"/>
+    <path d="M-96-32C-42-58 30-52 88-18M-104 14C-35-8 38-2 96 26M-82 60C-22 44 42 52 78 70" fill="none" stroke="#d5b7ff" stroke-opacity=".14" stroke-width="8"/>
+    <ellipse rx="174" ry="32" fill="none" stroke="#ff9b42" stroke-opacity=".28" stroke-width="5" transform="rotate(-18)"/>
+    <ellipse rx="158" ry="22" fill="none" stroke="#54f3ef" stroke-opacity=".18" stroke-width="2" transform="rotate(-18)"/>
+  </g>
+  <g opacity=".58" fill="#0b0b20" stroke="#35244f" stroke-width="2">
+    <path d="M522 0H590V72H660V20H730V116H804V54H880V128H950V66H1032V142H1104V84H1200V154H1280V284H522Z"/>
+    <path d="M522 284H604V218H684V276H766V196H850V262H936V208H1020V280H1110V224H1200V288H1280V354H522Z"/>
+  </g>
+  <g stroke="#54f3ef" stroke-width="2" opacity=".42" filter="url(#glow)"><path d="M590 72V40H660M804 54V24H880M766 196V150H850"/></g>
+  <g fill="#ff9b42" opacity=".55" filter="url(#glow)"><rect x="620" y="88" width="58" height="4"/><rect x="872" y="96" width="70" height="4"/><rect x="1080" y="114" width="54" height="4"/></g>
+  <path d="M734-60 1164-60 1066 780 448 780Z" fill="#030611" opacity=".74"/>
+  <path d="M752-60 1146-60 1050 780 500 780Z" fill="url(#asphalt)" stroke="#3a3158" stroke-width="4"/>
+  <path d="M752-60 778-60 546 780H500Z" fill="#090b18"/>
+  <path d="M1120-60 1146-60 1050 780H1004Z" fill="#090b18"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M762-60 552 780" stroke="#54f3ef" stroke-width="8" filter="url(#glow)"/>
+    <path d="M1136-60 998 780" stroke="#ff4fae" stroke-width="8" filter="url(#glow)"/>
+    <path d="M833-60 664 780M914-60 790 780M995-60 916 780" stroke="#e8e5ff" stroke-opacity=".42" stroke-width="5" stroke-dasharray="42 46"/>
+    <path d="M793-60 602 780M1095-60 976 780" stroke="#ffffff" stroke-opacity=".1" stroke-width="2"/>
+  </g>
+  <g opacity=".72" filter="url(#glow)">
+    <path d="M786 8C808 156 728 352 650 636" fill="none" stroke="#54f3ef" stroke-width="12" stroke-linecap="round"/>
+    <path d="M786 8C808 156 728 352 650 636" fill="none" stroke="#d8ffff" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M1104 6C1084 172 1018 364 952 650" fill="none" stroke="#ff9b42" stroke-width="12" stroke-linecap="round"/>
+    <path d="M1104 6C1084 172 1018 364 952 650" fill="none" stroke="#fff0b0" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(742 238)" filter="url(#glow)">
+    <path d="M-45-20H45L58 22H-58Z" fill="#24182d" stroke="#ff4fae" stroke-width="3"/>
+    <path d="M-48-12H48" stroke="#ff9ecf" stroke-width="6"/>
+  </g>
+  <g transform="translate(996 318) scale(.72)" filter="url(#glow)">
+    <path d="M0-36 31 0 0 36-31 0Z" fill="#ff9b42" stroke="#fff0b0" stroke-width="3"/>
+    <ellipse rx="48" ry="15" fill="none" stroke="#ff9b42" stroke-width="4"/>
+  </g>
+  <g transform="translate(868 448) rotate(8)" filter="url(#glow)">
+    <ellipse cx="8" cy="40" rx="105" ry="178" fill="#00040e" opacity=".66" filter="url(#blur)"/>
+    <g fill="#07101e" stroke="#54f3ef" stroke-width="3">
+      <rect x="-96" y="-116" width="30" height="80" rx="10"/><rect x="66" y="-116" width="30" height="80" rx="10"/>
+      <rect x="-96" y="56" width="30" height="84" rx="10"/><rect x="66" y="56" width="30" height="84" rx="10"/>
+    </g>
+    <path d="M-66-164-44-190H44L66-164L88-70L74 112L50 174H-50L-74 112L-88-70Z" fill="url(#craft)" stroke="#c9ffff" stroke-width="4"/>
+    <path d="M-50-154-31-180H31L50-154L39-88H-39Z" fill="#0a1730" stroke="#7bf7f5" stroke-width="3"/>
+    <path d="M-34-168H34L27-136H-27Z" fill="#ff9b42" opacity=".88"/>
+    <path d="M-47-72H47L62 32H-62Z" fill="url(#glass)" stroke="#8bf9f7" stroke-width="3"/>
+    <path d="M-36-58H36L45-8H-45Z" fill="#173553" opacity=".78"/>
+    <path d="M-61 44H61L72 112H-72Z" fill="#0c4868" stroke="#54f3ef" stroke-width="3"/>
+    <path d="M-49 126H49L41 162H-41Z" fill="#09283e" stroke="#54f3ef" stroke-width="3"/>
+    <path d="M-72 98-50 94M50 94 72 98" stroke="#ff9b42" stroke-width="8"/>
+    <path d="M-65-88-42-86M42-86 65-88" stroke="#eaffff" stroke-width="9" filter="url(#glow)"/>
+    <path d="M-62 140-40 135M40 135 62 140" stroke="#ff4fae" stroke-width="8" filter="url(#glow)"/>
+    <path d="M0-76V168" stroke="#d9ffff" stroke-opacity=".35" stroke-width="3"/>
+    <path d="M-34 158 0 224 34 158" fill="#54f3ef" opacity=".2" filter="url(#blur)"/>
+    <path d="M-20 160 0 210 20 160" fill="#54f3ef"/>
+    <path d="M-10 164 0 192 10 164" fill="#efffff"/>
+  </g>
+  <g transform="translate(700 492)" filter="url(#glow)">
+    <circle r="23" fill="#54f3ef" opacity=".1"/>
+    <circle r="15" fill="none" stroke="#54f3ef" stroke-width="4"/>
+    <path d="M0-9 8 0 0 9-8 0Z" fill="#d9ffff"/>
+  </g>
+  <rect width="1280" height="720" fill="url(#shade)"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <g transform="translate(76 66)">
+      <rect width="238" height="30" rx="15" fill="#17132d" stroke="#ff9b42" stroke-opacity=".55"/>
+      <circle cx="17" cy="15" r="4" fill="#ff9b42" filter="url(#glow)"/>
+      <text x="32" y="20" fill="#ffe6d2" font-size="12" font-weight="700" letter-spacing="3">THREE.JS // ENDLESS RACER</text>
+    </g>
+    <text x="72" y="218" fill="#f8f7ff" font-size="90" font-weight="900" letter-spacing="-5">VOID</text>
+    <text x="72" y="310" fill="#ff9b42" font-size="90" font-weight="900" letter-spacing="-5" filter="url(#glow)">RALLY</text>
+    <path d="M76 340H394" stroke="#54f3ef" stroke-width="5"/>
+    <text x="76" y="382" fill="#c8c4dc" font-size="18" font-weight="600" letter-spacing="1">NO FINISH LINE. ONLY VELOCITY.</text>
+    <g transform="translate(76 424)">
+      <rect width="128" height="42" rx="8" fill="#ff9b42" fill-opacity=".1" stroke="#ff9b42" stroke-opacity=".5"/>
+      <text x="18" y="27" fill="#ffe6d2" font-size="13" font-weight="700" letter-spacing="2">ENDLESS</text>
+      <rect x="142" width="126" height="42" rx="8" fill="#54f3ef" fill-opacity=".1" stroke="#54f3ef" stroke-opacity=".5"/>
+      <text x="160" y="27" fill="#d9feff" font-size="13" font-weight="700" letter-spacing="2">4 LANES</text>
+      <rect x="282" width="148" height="42" rx="8" fill="#ff4fae" fill-opacity=".1" stroke="#ff4fae" stroke-opacity=".5"/>
+      <text x="300" y="27" fill="#ffe0f1" font-size="13" font-weight="700" letter-spacing="2">FLUX BOOST</text>
+    </g>
+    <text x="76" y="638" fill="#817a9f" font-size="12" font-weight="700" letter-spacing="4">ORIGINAL ARCADE SERIES // 02</text>
+    <g transform="translate(1002 598)">
+      <text y="0" fill="#ffd8b5" font-size="11" font-weight="700" letter-spacing="3">VELOCITY</text>
+      <text y="60" fill="#f8f7ff" font-size="48" font-weight="900">328</text>
+      <text x="122" y="58" fill="#54f3ef" font-size="13" font-weight="700">KM/H</text>
+      <path d="M0 76H194" stroke="#54f3ef" stroke-width="3"/>
+      <path d="M0 76H158" stroke="#ff9b42" stroke-width="3"/>
+    </g>
+  </g>
+</svg>
