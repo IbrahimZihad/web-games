@@ -104,7 +104,10 @@ export function GameExperience({ game }: { game: GameDTO }) {
     const onMessage = (event: MessageEvent) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
       if (event.data?.type === "GAME_SCORE" && Number.isFinite(event.data.score)) setScore(Number(event.data.score));
-      if (event.data?.type === "NEXUS_READY") setLoading(false);
+      if (event.data?.type === "NEXUS_READY") {
+        setLoading(false);
+        iframeRef.current?.contentWindow?.postMessage({ type: "NEXUS_PLAY" }, "*");
+      }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
