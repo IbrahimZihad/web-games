@@ -53,12 +53,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     client.on("connect", onConnect);
     client.on("disconnect", onDisconnect);
     client.on("presence:update", onPresence);
+    client.on("presence:state", onPresence);
     const frame = window.requestAnimationFrame(() => setSocket(client));
     return () => {
       window.cancelAnimationFrame(frame);
       client.off("connect", onConnect);
       client.off("disconnect", onDisconnect);
       client.off("presence:update", onPresence);
+      client.off("presence:state", onPresence);
       client.disconnect();
     };
   }, []);
@@ -86,10 +88,12 @@ export function useGamePresence(gameId: number, enabled: boolean): number | null
       }
     };
     socket.on("presence:update", onPresence);
+    socket.on("presence:state", onPresence);
     socket.emit("presence:subscribe", { gameId });
     return () => {
       active = false;
       socket.off("presence:update", onPresence);
+      socket.off("presence:state", onPresence);
       if (socket.connected) socket.emit("presence:subscribe", { gameId: null });
     };
   }, [connected, enabled, gameId, socket]);
