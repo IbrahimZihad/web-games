@@ -211,7 +211,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       {mobileOpen && <button className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" />}
-      <aside id="portal-sidebar" className={`fixed inset-y-0 left-0 z-[60] flex flex-col border-r border-white/[0.06] bg-[#10111b] transition-[width,transform] duration-300 ${collapsed ? "lg:w-[84px]" : "w-[248px] lg:w-[248px]"} ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+      <aside id="portal-sidebar" className={`fixed inset-y-0 left-0 z-[60] flex w-[248px] flex-col border-r border-white/[0.06] bg-[#10111b] transition-[width,transform] duration-300 ${collapsed ? "lg:w-[84px]" : "lg:w-[248px]"} ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className={`flex h-[76px] items-center border-b border-white/[0.06] ${collapsed ? "justify-between px-5 lg:justify-center lg:px-2" : "justify-between px-5"}`}>
           <Brand compact={collapsed} />
           {!collapsed && <button className="hidden rounded-lg p-1.5 text-zinc-600 hover:bg-white/5 hover:text-white lg:block" onClick={toggleCollapsed} aria-label="Collapse sidebar"><ChevronLeft size={17} /></button>}
@@ -253,8 +253,12 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
       <div className={`transition-[margin] duration-300 ${collapsed ? "lg:ml-[84px]" : "lg:ml-[248px]"}`}>
         <header className="sticky top-0 z-40 flex h-[76px] items-center gap-3 border-b border-white/[0.06] bg-[#0c0d14]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-          <button onClick={() => setMobileOpen(true)} className="icon-button lg:hidden" aria-label="Open navigation" aria-controls="portal-sidebar" aria-expanded={mobileOpen}><Menu size={20} /></button>
-          <button onClick={toggleCollapsed} className="icon-button hidden lg:inline-flex" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-controls="portal-sidebar" aria-expanded={!collapsed}><Menu size={20} /></button>
+          <span className="lg:hidden">
+            <button onClick={() => setMobileOpen(true)} className="icon-button" aria-label="Open navigation" aria-controls="portal-sidebar" aria-expanded={mobileOpen}><Menu size={20} /></button>
+          </span>
+          <span className="hidden lg:inline-flex">
+            <button onClick={toggleCollapsed} className="icon-button" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-controls="portal-sidebar" aria-expanded={!collapsed}><Menu size={20} /></button>
+          </span>
           <div className="relative ml-auto w-full max-w-[520px] sm:ml-0">
             <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
             <input

@@ -148,5 +148,5 @@ Uploaded files are stored under `public/uploads`. Multi-instance or serverless d
 - Build with `npm run build`, then run `npm run start:pm2`. The ecosystem starts Next.js, the realtime sidecar, and the play-count worker without Docker.
 - Configure `REDIS_URL` before relying on multi-process presence, distributed rate limits, or BullMQ. `DATABASE_POOL_SIZE` applies per Node process, so size the total pool against the MySQL connection limit.
 - Native monitoring configuration lives in `deploy/monitoring`. Point `OTEL_EXPORTER_OTLP_ENDPOINT` at the collector and optionally configure `NEXT_PUBLIC_SENTRY_DSN`.
-- The Nginx profile proxies `/socket.io/` to port 3001 with WebSocket upgrade headers. Validate it with the included Nginx binary using `scripts/start-nginx.ps1`.
+- The Nginx profile proxies `/socket.io/` to port 3001 with WebSocket upgrade headers. Add every browser-facing app origin to `REALTIME_ALLOWED_ORIGINS`; the local profile uses `http://127.0.0.1:8080` and `http://localhost:8080`. Validate it with the included Nginx binary using `scripts/start-nginx.ps1`.
 - k6 scenarios are provided but were not executed as part of this stack integration. Set `K6_BASE_URL`, `K6_GAME_ID`, and `K6_TARGET_VUS` before an explicitly authorized run.
