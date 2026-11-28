@@ -146,7 +146,7 @@ io.on("connection", (socket: Socket) => {
       const previousGameId = gameId;
       if (previousGameId !== nextGameId) {
         socket.leave(roomName(previousGameId));
-        broadcastPresence(previousGameId, result.previousCount);
+        if (previousGameId !== null) broadcastPresence(previousGameId, result.previousCount);
       }
       gameId = nextGameId;
       socket.join(roomName(gameId));
@@ -161,7 +161,7 @@ io.on("connection", (socket: Socket) => {
     clearInterval(heartbeat);
     const previousGameId = gameId;
     void presence.leave(socket.id, previousGameId).then((result) => {
-      broadcastPresence(previousGameId, result.gameCount);
+      if (previousGameId !== null) broadcastPresence(previousGameId, result.gameCount);
       broadcastPresence(null, result.onlineCount);
     });
   });
