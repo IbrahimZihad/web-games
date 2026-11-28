@@ -57,7 +57,10 @@ model User {
   playHistory  PlayHistory[]
   ratings      GameRating[]
   comments     Comment[]
-  createdGames Game[]      @relation("GameCreator")
+  scores       GameScore[]
+  followers    UserFollow[]  @relation("UserFollowers")
+  following    UserFollow[]  @relation("UserFollowing")
+  createdGames Game[]        @relation("GameCreator")
 }
 
 model Category {
@@ -108,6 +111,7 @@ model Game {
   playHistory   PlayHistory[]
   ratings       GameRating[]
   comments      Comment[]
+  scores        GameScore[]
 
   @@index([status, publishedAt])
   @@index([categoryId])
@@ -183,4 +187,29 @@ model Comment {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([gameId, createdAt])
+}
+
+model UserFollow {
+  followerId Int      @db.UnsignedInt
+  followeeId Int      @db.UnsignedInt
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+
+  follower User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followee User @relation("UserFollowers", fields: [followeeId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followeeId])
+  @@index([followeeId])
+}
+
+model GameScore {
+  gameId    Int      @db.UnsignedInt
+  userId    Int      @db.UnsignedInt
+  score     Int      @db.UnsignedInt
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(0)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, userId])
+  @@index([gameId, score])
 }
