@@ -176,6 +176,8 @@ worker.onmessage = (event: MessageEvent<SimulationMessage>) => {
   }
 };
 worker.onerror = () => showError("The simulation worker could not start. Reload the cartridge to try again.");
+// Re-request readiness after Vite's inline-worker wrapper attaches its listener.
+worker.postMessage({ type: "ping" });
 
 const app = new Application();
 const background = new Graphics();

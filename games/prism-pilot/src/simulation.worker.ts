@@ -25,6 +25,7 @@ export interface PilotInput {
 }
 
 export type SimulationCommand =
+  | { type: "ping" }
   | { type: "start" }
   | { type: "pause" }
   | { type: "resume" }
@@ -567,7 +568,8 @@ function update(dt: number) {
 scope.onmessage = (event: MessageEvent<SimulationCommand>) => {
   const command = event.data;
   if (!command || typeof command !== "object") return;
-  if (command.type === "start" || command.type === "restart") startGame();
+  if (command.type === "ping") scope.postMessage({ type: "ready" });
+  else if (command.type === "start" || command.type === "restart") startGame();
   else if (command.type === "pause" && state.status === "playing") togglePause();
   else if (command.type === "resume" && state.status === "paused") togglePause();
   else if (command.type === "togglePause") togglePause();
@@ -591,5 +593,3 @@ setInterval(() => {
     emitSnapshot();
   }
 }, 16);
-
-scope.postMessage({ type: "ready" });
