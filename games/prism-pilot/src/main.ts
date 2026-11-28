@@ -564,6 +564,7 @@ function destroy() {
   window.removeEventListener("keyup", onKeyUp);
   window.removeEventListener("message", onMessage);
   window.removeEventListener("blur", pauseGame);
+  document.removeEventListener("visibilitychange", onVisibilityChange);
   worker.terminate();
   if (rendererReady) app.destroy({ removeView: true }, { children: true, texture: true, textureSource: true, context: true });
 }
